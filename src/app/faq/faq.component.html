@@ -1,0 +1,38 @@
+<div class="faq-section p-6 rounded-lg shadow-lg mb-10 border border-gray-200">
+    <h2 class="text-3xl font-bold mb-6 text-center text-base-content font-sans my-5">Frequently Asked Questions</h2>
+
+
+    <div class="space-y-4 p-6rounded-lg shadow-lg mb-40 border-gray-200">
+        <!-- Accordion -->
+        <div *ngFor="let item of faqItems; let i = index" class="rounded-lg overflow-hidden shadow transition-all duration-100 border-l-4 border-teal-500">
+            <div class="accordion-item border">
+
+                <!-- Accordion Header -->
+                <h3 
+                    class="accordion-header p-5 flex justify-between items-center cursor-pointer text-base-content font-medium hover:bg-teal-0 transition-colors duration-300"
+                    (click)="toggleItem(i)">
+                    
+                    <!-- Question Text -->
+                    <span class="text-lg font-sans font-semibold tracking-wide">{{ item.question }}</span>
+
+                    <!-- Icon with Rotation Transition -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transition-transform duration-300 text-teal-500" 
+                         [ngClass]="{'rotate-180': expandedItems.includes(i)}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </h3>
+
+                <!-- Accordion Body -->
+                <div 
+                    class="accordion-body bg-gray-50 px-5 py-4 text-base text-gray-700 transition-all duration-500 ease-in-out tracking-wide"
+                    [ngClass]="{'max-h-96 opacity-100': expandedItems.includes(i), 'max-h-0 opacity-0': !expandedItems.includes(i)}">
+                    <p class="font-sans leading-relaxed">{{ item.answer }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+   
+
+
+   
+</div>

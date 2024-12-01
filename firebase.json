@@ -1,0 +1,17 @@
+{
+  "hosting": {
+    "site": "myresume01",
+    "public": "dist/my-angular-website/browser",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

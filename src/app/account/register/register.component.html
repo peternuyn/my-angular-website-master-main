@@ -1,0 +1,77 @@
+<div class="relative flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 overflow-hidden">
+    <!-- Animated Blob Background -->
+    <div class="absolute top-0 left-0 w-72 h-72 bg-purple-300 opacity-20 rounded-full mix-blend-multiply blur-2xl animate-blob"></div>
+    <div class="absolute top-0 right-0 w-72 h-72 bg-indigo-300 opacity-100 rounded-full blur-2xl animate-blob delay-[2000ms]"></div>
+    <div class="absolute bottom-0 left-20 w-72 h-72 bg-pink-300 opacity-40 rounded-full blur-2xl animate-blob delay-[4000ms]"></div>
+    
+    <!-- Sign In/Sign Up Form Card -->
+    <div class="relative w-full max-w-md bg-base-100 rounded-lg shadow-lg p-8 z-10">
+      <h2 class="text-3xl font-bold text-primary mb-6 text-center">Sign In Your Account</h2>
+      
+      <!-- Toggle for Sign-Up -->
+      <button class="btn btn-secondary w-full mb-4" (click)="toggleSignUp()">
+        {{ isSigningUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up" }}
+      </button>
+  
+      <!-- Sign-Up Form -->
+      <div *ngIf="isSigningUp">
+        <form [formGroup]="form" (ngSubmit)="signUp()">
+          <div *ngIf="errorMessage" class="alert alert-error mb-4">
+            <span class="text-sm">{{ errorMessage }}</span>
+          </div>
+          <div class="form-control mb-4">
+            <label class="label">
+              <span class="label-text">Username</span>
+            </label>
+            <input type="text" placeholder="Username" formControlName="username" class="input input-bordered w-full" required />
+          </div>
+          <div class="form-control mb-4">
+            <label class="label">
+              <span class="label-text">Email</span>
+            </label>
+            <input type="email" placeholder="Email" formControlName="email" class="input input-bordered w-full" required />
+          </div>
+          <div class="form-control mb-6">
+            <label class="label">
+              <span class="label-text">Password</span>
+            </label>
+            <input type="password" placeholder="Password" formControlName="password" class="input input-bordered w-full" required />
+          </div>
+          <button type="submit" class="btn btn-primary w-full">Sign Up</button>
+          <div class="form-control flex items-center justify-end">
+            <label class="label cursor-pointer flex items-center space-x-2">
+              <span class="label-text text-center">Admin mode</span>
+              <input type="checkbox" class="checkbox checkbox-primary" formControlName="isAdmin" />
+            </label>
+          </div>
+        </form>
+      </div>
+  
+      <!-- Login Form -->
+      <div *ngIf="!isSigningUp">
+        <form [formGroup]="form" (ngSubmit)="login()">
+          <div *ngIf="loginErrorMessage" class="alert alert-error mb-4">
+            <span class="text-sm">{{ loginErrorMessage }}</span>
+          </div>
+          <div class="form-control mb-4">
+            <label class="label">
+              <span class="label-text">Email</span>
+            </label>
+            <input type="text" placeholder="Email" formControlName="username" class="input input-bordered w-full" required />
+          </div>
+          <div class="form-control mb-6">
+            <label class="label">
+              <span class="label-text">Password</span>
+            </label>
+            <input type="password" placeholder="Password" formControlName="password" class="input input-bordered w-full" required />
+          </div>
+          <button type="submit" class="btn btn-primary w-full">Login</button>
+        </form>
+      </div>
+  
+      <!-- Forgot Password Link -->
+      <div class="text-center mt-4">
+        <a href="#" class="text-sm text-primary">Forgot your password?</a>
+      </div>
+    </div>
+  </div>

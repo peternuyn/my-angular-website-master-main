@@ -1,0 +1,36 @@
+<div class="navbar bg-base-100">
+    <div class="flex-1">
+      <a routerLink="/" class="btn btn-ghost text-2xl">MyResume</a>
+    </div>
+    <div>
+      <ul class="menu menu-horizontal">
+        <li class="nav-item"><a routerLink="/about-you">About User</a></li>
+        <li class="nav-item"><a routerLink="/your-projects">Projects</a></li>
+        <li class="nav-item" *ngIf="theme === 'light'">
+          <a href="https://github.com/peternuyn" target="_blank" class="github-link">
+            <img src="../../assets/images/github-mark.svg" alt="GitHub Logo" class="h-7 w-7">
+          </a>
+        </li>
+        <li class="nav-item" *ngIf="theme !== 'light'">
+          <a href="https://github.com/peternuyn" target="_blank" class="github-link">
+            <img src="../../assets/images/github-mark-white.png" alt="GitHub Logo" class="h-7 w-7">
+          </a>
+        </li>
+        <li>
+          <a routerLink="/your-template">Your Template</a>
+        </li>
+        <li class="nav-item">
+          <a>
+            <input type="checkbox" value="synthwave" class="toggle theme-controller" (change)="toggleTheme()" />
+          </a>
+        </li>
+        @if (currentUsername !== '') {
+        <li><a><div class="avatar online placeholder">
+          <div class="bg-neutral text-neutral-content w-20 h-9 rounded-full">
+            <span class="text-xl">{{currentUsername}}</span>
+          </div>
+        </div></a></li>
+      }
+      </ul>
+    </div>
+  </div>
