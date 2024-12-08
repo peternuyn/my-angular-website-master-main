@@ -24,6 +24,7 @@ export class TemplateComponent {
   currentUsername: string = '';
   private userSubscription!: Subscription;
   profileImageUrl: string | ArrayBuffer | null = null;
+  isEditable: boolean = false;
   authService = inject(AuthService);
   userProfileService = inject(UserProfileService);
   uid: string = this.authService.getCurrentUser()?.uid || '';
@@ -35,27 +36,23 @@ export class TemplateComponent {
 
   ngOnInit(): void {
     const userId = this.route.snapshot.paramMap.get('id');
-    if (!userId) {
-      console.error('No user ID provided in the route.');
-      this.isLoading = false;
-      return;
-    }
+    console.log('User ID from route:', userId);
+    if (!userId) return; // Exit early if no userId
   
     this.isLoading = true;
     const userDocRef = doc(this.firestore, `users/${userId}`);
+  
     this.firestoreSubscription = docData(userDocRef).subscribe(
       (userData: any) => {
-        console.log('Retrieved user data:', userData); 
-        if (userData) {
-          // Retrieve the user data from Firestore
-          this.user = userData;
-          this.name = userData.name || '';
-          this.title = userData.title || '';
-          this.aboutMe = userData.aboutMe || '';
-          this.contactInfo = userData.contactInfo || '';
-          this.otherInfo = userData.otherInfo || '';
-          this.profileImageUrl = userData.profileImageUrl || null;
-        }
+        if (!userData) return; // Early exit if userData is not found
+        this.user = userData;
+        const { name = '', title = '', aboutMe = '', contactInfo = '', otherInfo = '', profileImageUrl = null } = userData;
+        this.name = name;
+        this.title = title;
+        this.aboutMe = aboutMe;
+        this.contactInfo = contactInfo;
+        this.otherInfo = otherInfo;
+        this.profileImageUrl = profileImageUrl;
         this.isLoading = false;
       },
       (error: any) => {
@@ -63,7 +60,12 @@ export class TemplateComponent {
         this.isLoading = false;
       }
     );
+  
+    const currentUser = this.authService.getCurrentUser();
+    this.isEditable = currentUser?.uid === userId; // Boolean comparison
   }
+  
+  
   
 
 
@@ -81,21 +83,25 @@ export class TemplateComponent {
   // Method to handle image selection
   onImageSelected(event: Event): void {
     const fileInput = event.target as HTMLInputElement;
-    if (fileInput.files && fileInput.files.length > 0) {
-      const file = fileInput.files[0];
-      const reader = new FileReader();
-      reader.onload = () => {
-        this.profileImageUrl = reader.result;
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!fileInput.files?.length) return; // Early exit if no files
+  
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    reader.onload = () => this.profileImageUrl = reader.result;
+    reader.onerror = () => console.error('File reading failed');
+    reader.readAsDataURL(file);
   }
 
   saveProfile() {
-  const currentUser = this.authService.getCurrentUser();
-  if (currentUser) {
+    if (!this.isEditable) {
+      console.warn('You do not have permission to edit this profile.');
+      return;
+    }
+  
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) return;
+  
     const profileData = {
-      uid: currentUser.uid,
       name: this.name,
       title: this.title,
       aboutMe: this.aboutMe,
@@ -103,10 +109,15 @@ export class TemplateComponent {
       otherInfo: this.otherInfo,
       profileImageUrl: this.profileImageUrl,
     };
-    
+  
+    if (JSON.stringify(this.user) === JSON.stringify(profileData)) {
+      console.log('No changes detected. Profile not saved.');
+      return; // Early exit if no changes
+    }
+  
     this.userProfileService.saveUserProfile(currentUser.uid, profileData)
       .then(() => console.log('Profile saved successfully!'))
       .catch((error) => console.error('Error saving profile:', error));
-    }
   }
+  
 }

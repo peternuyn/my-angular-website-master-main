@@ -6,7 +6,6 @@ import { FaqComponent } from './faq/faq.component';
 import { ProjectsComponent } from './projects/projects.component';
 import { TemplateComponent } from './my_template/template.component';
 import { RegisterComponent } from './account/register/register.component';
-import { AuthGuard } from '@angular/fire/auth-guard';
 
 // Define your routes here
 export const routes: Routes = [
@@ -15,7 +14,7 @@ export const routes: Routes = [
   { path: 'projects', component: ProjectsComponent }, // Route to "Projects" page
   { path: 'faq', component: FaqComponent }, // Route to "FAQ" page
   { path: 'signup', component: RegisterComponent }, // Route to "Signup" page
-  { path: 'user/:id', component: TemplateComponent, canActivate: [AuthGuard] }
+  { path: 'user/:id', component: TemplateComponent }
 
 ];
 

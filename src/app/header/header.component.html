@@ -19,7 +19,7 @@
           <img src="../../assets/images/github-mark-white.png" alt="GitHub Logo" class="h-7 w-7">
         </a>
       </li>
-      <li *ngIf="currentUserDisplay">
+      <li>
         <a [routerLink]="['/user', currentUserId]">Your Template</a>
       </li>
       <li class="nav-item">
