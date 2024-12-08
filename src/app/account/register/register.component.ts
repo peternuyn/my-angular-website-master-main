@@ -9,10 +9,17 @@ import { signInWithEmailAndPassword } from "@angular/fire/auth";
 
 
 
+
 export interface User {
-  email: string | undefined;
-  password: string | undefined;
+
+  uid: string;
+
+  email?: string;
+  
   admin?: boolean;
+
+  displayName?: string;  // Add displayName property
+
 }
 
 @Component({
