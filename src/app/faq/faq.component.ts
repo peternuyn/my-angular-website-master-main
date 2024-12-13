@@ -10,7 +10,6 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './faq.component.html',
-  styleUrl: './faq.component.css'
 })
 
 /**

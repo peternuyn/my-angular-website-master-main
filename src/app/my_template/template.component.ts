@@ -11,7 +11,7 @@ import { ActivatedRoute } from '@angular/router';
 @Component({
   selector: 'app-template',
   standalone: true,
-  imports: [CommonModule, TemplateHeaderComponent,FormsModule],
+  imports: [CommonModule,FormsModule],
   templateUrl: './template.component.html',
 })
 

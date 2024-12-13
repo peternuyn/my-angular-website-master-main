@@ -9,12 +9,12 @@
       <li class="nav-item"><a routerLink="/projects">Projects</a></li>
       <li class="nav-item"><a routerLink="/faq">FAQ</a></li>
       <li class="nav-item"><a routerLink="/signup">Sign Up</a></li>
-      <li class="nav-item" *ngIf="theme === 'light'">
+      <li class="nav-item" *ngIf="theme == 'light'">
         <a href="https://github.com/peternuyn" target="_blank" class="github-link">
           <img src="../../assets/images/github-mark.svg" alt="GitHub Logo" class="h-7 w-7">
         </a>
       </li>
-      <li class="nav-item" *ngIf="theme !== 'light'">
+      <li class="nav-item" *ngIf="theme != 'light'">
         <a href="https://github.com/peternuyn" target="_blank" class="github-link">
           <img src="../../assets/images/github-mark-white.png" alt="GitHub Logo" class="h-7 w-7">
         </a>
