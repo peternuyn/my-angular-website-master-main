@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { User } from '../../account/register/register.component';
-import { AuthService } from '../../../auth.service';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'template-header',

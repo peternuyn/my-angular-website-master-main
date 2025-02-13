@@ -2,10 +2,8 @@ import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { Component, inject } from "@angular/core";
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { Router } from "@angular/router";
-import { AuthService } from "../../../auth.service";
+import { AuthService } from "../../../services/auth.service";
 import { NgIf } from "@angular/common";
-import { Observable } from "rxjs";
-import { signInWithEmailAndPassword } from "@angular/fire/auth";
 
 
 

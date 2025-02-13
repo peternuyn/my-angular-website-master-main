@@ -1,81 +1,90 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-<div *ngIf="isLoading">Loading user profile...</div>
-
-<div *ngIf="!isLoading" class="about-container p-9">
-    <!-- Name Input -->
+<h2 class="text-center text-red-500 font-bold text-xl mt-4 mb-4 bg-red-100 p-3 rounded-md shadow-md">
+  Please sign in before making up your resume
+</h2>
+<div id="contentToPrint" class="about-container p-9">
+  <!-- Name Input -->
+  <input 
+    type="text" 
+    [(ngModel)]="name" 
+    placeholder="Enter your name" 
+    class="font-bold text-5xl font-mono border-b-2 border-gray-300 focus:outline-none focus:border-blue-500 mb-2" 
+    [disabled]="isLoading"
+  />
+  
+  <!-- Title Input -->
+  <input 
+    type="text" 
+    [(ngModel)]="title" 
+    placeholder="Enter your title" 
+    class="font-mono text-xl border-b-2 border-gray-300 focus:outline-none focus:border-blue-500 mb-5" 
+    [disabled]="isLoading"
+  />
+  
+  <!-- Profile Image Upload and Preview -->
+  <div class="mt-5 mb-5">
+    <label class="block text-gray-700 font-medium mb-2" for="profileImage">Upload Profile Image:</label>
     <input 
-      type="text" 
-      [(ngModel)]="name" 
-      placeholder="Enter your name" 
-      class="font-bold text-5xl font-mono border-b-2 border-gray-300 focus:outline-none focus:border-blue-500 mb-2" 
+    type="file" 
+    id="profileImage" 
+    (change)="onImageSelected($event)" 
+    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+    [disabled]="isLoading"
     />
-  
-    <!-- Title Input -->
-    <input 
-      type="text" 
-      [(ngModel)]="title" 
-      placeholder="Enter your title" 
-      class="font-mono text-xl border-b-2 border-gray-300 focus:outline-none focus:border-blue-500 mb-5" 
+    <img 
+    *ngIf="profileImageUrl" 
+    [src]="profileImageUrl" 
+    alt="profile" 
+    class="w-full sm:w-1/2 md:w-1/4 h-auto mt-5 border my-5"
     />
+  </div>
   
-    <!-- Profile Image Upload and Preview -->
-    <div class="mt-5 mb-5">
-        <label class="block text-gray-700 font-medium mb-2" for="profileImage">Upload Profile Image:</label>
-        <input 
-        type="file" 
-        id="profileImage" 
-        (change)="onImageSelected($event)" 
-        class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-        />
-        <img 
-        *ngIf="profileImageUrl" 
-        [src]="profileImageUrl" 
-        alt="profile" 
-        class="w-full sm:w-1/2 md:w-1/4 h-auto mt-5 border my-5"
-        />
-    </div>
-    
-    <!-- About Me Section -->
-    <h2 class="mt-7 mb-3 text-3xl font-semibold">About Me</h2>
-    <textarea 
-      [(ngModel)]="aboutMe" 
-      placeholder="Tell us about yourself"
-      class="w-full h-32 text-lg tracking-wider leading-relaxed p-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 resize-none mb-4"
-    ></textarea>
+  <!-- About Me Section -->
+  <h2 class="mt-7 mb-3 text-3xl font-semibold">About Me</h2>
+  <textarea 
+    [(ngModel)]="aboutMe" 
+    placeholder="Tell us about yourself"
+    class="w-full h-32 text-lg tracking-wider leading-relaxed p-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 resize-none mb-4"
+    [disabled]="isLoading"
+  ></textarea>
   
-    <!-- Contact Section -->
-    <h3 class="text-3xl font-bold my-8">Contact</h3>
-    <textarea
-      [(ngModel)]="contactInfo"
-      placeholder="Enter your contact information"
-      class="w-full text-lg tracking-wider leading-relaxed p-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 resize-none mb-4"
-    ></textarea>
+  <!-- Contact Section -->
+  <h3 class="text-3xl font-bold my-8">Contact</h3>
+  <textarea
+    [(ngModel)]="contactInfo"
+    placeholder="Enter your contact information"
+    class="w-full text-lg tracking-wider leading-relaxed p-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 resize-none mb-4"
+    [disabled]="isLoading"
+  ></textarea>
   
-    <!-- Others Section -->
-    <h3 class="text-3xl font-bold my-8">Others</h3>
-    <textarea
-      [(ngModel)]="otherInfo"
-      placeholder="Enter other information"
-      class="w-full text-lg tracking-wider leading-relaxed p-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 resize-none mb-4"
-    ></textarea>
-
+  <!-- Others Section -->
+  <h3 class="text-3xl font-bold my-8">Others</h3>
+  <textarea
+    [(ngModel)]="otherInfo"
+    placeholder="Enter other information"
+    class="w-full text-lg tracking-wider leading-relaxed p-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 resize-none mb-4"
+    [disabled]="isLoading"
+  ></textarea>
+  <div class="flex justify-end space-x-4 mt-6">
     <!-- Save Button -->
-    <div class="mt-6">
-      <button *ngIf="isEditable"
-        (click)="saveProfile()" 
-        class="bg-blue-500 text-white py-2 px-6 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-        Save
-      </button>
-    </div>
-    
+    <button
+    *ngIf="isEditable"
+    (click)="saveProfile()" 
+    class="bg-blue-500 text-white py-2 px-6 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+    [disabled]="isLoading"
+    >
+    Save
+    </button>
+
     <!-- Download PDF Button -->
-    <div class="mt-6">
-      <button 
-        (click)="downloadPDF()" 
-        class="bg-green-500 text-white py-2 px-6 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-      >
-        Download PDF
-      </button>
-    </div>
+    <button 
+    (click)="downloadPDF()" 
+    class="bg-green-500 text-white py-2 px-6 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+    [disabled]="isLoading"
+    >
+    Download PDF
+    </button>
+  </div>
 
 </div>

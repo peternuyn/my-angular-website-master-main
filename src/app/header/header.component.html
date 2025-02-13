@@ -29,14 +29,18 @@
       </li>
       <li *ngIf="currentUserDisplay !== ''">
         <a>
-          <div class="avatar online placeholder">
-        <div class="bg-neutral text-neutral-content w-20 h-9 rounded-full">
-          <span class="text-xl">{{currentUserDisplay}}</span>
-        </div>
+          <div class="dropdown">
+            <div tabindex="0" role="button" class="avatar online placeholder">
+              <div class="bg-neutral text-neutral-content w-20 h-9 rounded-full">
+              <span class="text-xl">{{currentUserDisplay}}</span>
+              </div>
+            </div>
+            <ul tabindex="0" class="dropdown-content menu bg-red-400 rounded-box z-[1] w-52 p-2 shadow">
+              <li><a (click)="signOut()">Sign Out</a></li>
+            </ul>
           </div>
         </a>
       </li>
-    
     </ul>
   </div>
 </div>

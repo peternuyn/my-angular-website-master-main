@@ -2,11 +2,11 @@ import { Component, EventEmitter, inject, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../../auth.service';
+import { AuthService } from '../../services/auth.service';
 import { UserProfileService } from './user_profile_service/user_profile_service';
 import { Firestore, collection, doc, docData } from '@angular/fire/firestore';
 import { ActivatedRoute } from '@angular/router';
-import html2pdf from 'html2pdf.js';
+import { jsPDF } from 'jspdf';
 
 @Component({
   selector: 'app-template',
@@ -26,7 +26,7 @@ export class TemplateComponent {
   isEditable: boolean = false;
   authService = inject(AuthService);
   userProfileService = inject(UserProfileService);
-  uid: string = this.authService.getCurrentUser()?.uid || '';
+  uid: string = (this.authService.getCurrentUser() as { uid: string })?.uid || '';
   theme: string = 'light';
   user: any;
   private firestoreSubscription!: Subscription;
@@ -84,20 +84,21 @@ export class TemplateComponent {
   }
 
   /**
-   *  Method to handle the image selection
+   * Method to handle the image selection
    * @param event 
-   * @returns  void
+   * @returns void
    */
   onImageSelected(event: Event): void {
     const fileInput = event.target as HTMLInputElement;
-    if (!fileInput.files?.length) return; // Early exit if no files
+    if (!(fileInput instanceof HTMLInputElement) || !fileInput.files?.length) return; // Early exit if no files
 
     const file = fileInput.files[0];
     const reader = new FileReader();
-    reader.onload = () => (this.profileImageUrl = reader.result);
+    reader.onload = () => (this.profileImageUrl = reader.result as string);
     reader.onerror = () => console.error('File reading failed');
     reader.readAsDataURL(file);
   }
+
 
   /**
    *  Method to save the profile data
@@ -136,17 +137,91 @@ export class TemplateComponent {
    * Method to download the resume as a PDF
    */
   downloadPDF() {
-    const element = document.getElementById('resume'); // This is your HTML content to convert to PDF
-    const options = {
-      margin: 1,
-      filename: 'my_resume.pdf',
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { orientation: 'portrait', unit: 'in', format: 'letter', compressPDF: true }
-    };
+    // Create a new jsPDF instance with A4 paper size (210mm x 297mm)
+    const doc = new jsPDF('p', 'mm', 'a4');
 
-    // Call the default import as a function
-    html2pdf().from(element).set(options).save();
+    // Set margins and spacing
+    const margin = 20; // 20mm margin
+    const pageWidth = doc.internal.pageSize.width; // Page width for center alignment
+    const lineHeight = 8; // Adjust line height for spacing
+    let yPosition = margin; // Starting Y position
+    // Set font (use a more professional font like Times New Roman)
+    doc.setFont('times', 'normal');
+    
+    // Name 
+    doc.setFontSize(24);
+    doc.setFont('courier', 'bold');
+    const title = `${this.name}`;
+    const titleWidth = doc.getStringUnitWidth(title) * doc.getFontSize() / doc.internal.scaleFactor;
+    doc.text(title, (pageWidth - titleWidth) / 2, yPosition); // Center-align the title
+    yPosition += lineHeight * 2; // Space after title
+
+    // Title
+    doc.setFont('times', 'italic');
+    doc.setFontSize(19);
+    const titleText = ` ${this.title}`;
+    const titleTextWidth = doc.getStringUnitWidth(titleText) * doc.getFontSize() / doc.internal.scaleFactor;
+    doc.text(titleText, (pageWidth - titleTextWidth) / 2, yPosition); // Center-align title
+    yPosition += lineHeight; // Space after title
+
+    // Add profile image if it exists
+    let imageHeight = 0;
+    if (this.profileImageUrl) {
+      const imageWidth = 50; // Image width in mm
+      imageHeight = 50; // Image height in mm
+      const xPosition = margin + 10; // Left-align the image but not on the margin
+      const yPositionImage = yPosition; // Y position for image, directly after text
+      doc.addImage(this.profileImageUrl as string, 'JPEG', xPosition, yPositionImage, imageWidth, imageHeight);
+      yPosition += imageHeight + 10; // Adjust yPosition after adding image
+    }
+
+    // About Me Section (with bold heading)
+    doc.setFontSize(14);
+    doc.setFont('times', 'bold');
+    const aboutMeHeading = '';
+    const aboutMeHeadingWidth = doc.getStringUnitWidth(aboutMeHeading) * doc.getFontSize() / doc.internal.scaleFactor;
+    doc.text(aboutMeHeading, (pageWidth - aboutMeHeadingWidth) / 2, yPosition); // Center-align heading
+    yPosition += lineHeight;
+    doc.setFontSize(12);
+    doc.setFont('times', 'normal');
+    const aboutMeLines = doc.splitTextToSize(this.aboutMe, pageWidth - 2 * margin); // Justify text within page width
+    doc.text(aboutMeLines, margin, yPosition);
+    yPosition += aboutMeLines.length * lineHeight;
+
+    // Contact Info Section (with bold heading)
+    doc.setFontSize(14);
+    doc.setFont('times', 'bold');
+    const contactHeading = 'Contact Information:';
+    const contactHeadingWidth = doc.getStringUnitWidth(contactHeading) * doc.getFontSize() / doc.internal.scaleFactor;
+    doc.text(contactHeading, (pageWidth - contactHeadingWidth) / 2, yPosition); // Center-align heading
+    yPosition += lineHeight;
+    doc.setFontSize(12);
+    doc.setFont('times', 'normal');
+    const contactLines = doc.splitTextToSize(this.contactInfo, pageWidth - 2 * margin); // Justify text within page width
+    doc.text(contactLines, margin, yPosition);
+    yPosition += contactLines.length * lineHeight;
+
+    // Other Info Section (with bold heading)
+    doc.setFontSize(14);
+    doc.setFont('times', 'bold');
+    const otherInfoHeading = 'Additional Information:';
+    const otherInfoHeadingWidth = doc.getStringUnitWidth(otherInfoHeading) * doc.getFontSize() / doc.internal.scaleFactor;
+    doc.text(otherInfoHeading, (pageWidth - otherInfoHeadingWidth) / 2, yPosition); // Center-align heading
+    yPosition += lineHeight;
+    doc.setFontSize(12);
+    doc.setFont('times', 'normal');
+    const otherInfoLines = doc.splitTextToSize(this.otherInfo, pageWidth - 2 * margin); // Justify text within page width
+    doc.text(otherInfoLines, margin, yPosition);
+    yPosition += otherInfoLines.length * lineHeight * 2; // Extra space before the image
+
+    // Footer with contact info or additional text
+    doc.setFontSize(10);
+    doc.setFont('times', 'italic');
+    const footerText = 'Generated with My Resume App - Contact: your-email@example.com';
+    const footerWidth = doc.getStringUnitWidth(footerText) * doc.getFontSize() / doc.internal.scaleFactor;
+    doc.text(footerText, (pageWidth - footerWidth) / 2, 285); // Center-align the footer text
+
+    // Save the PDF with the filename 'resume.pdf'
+    doc.save('resume.pdf');
   }
-  
 }
