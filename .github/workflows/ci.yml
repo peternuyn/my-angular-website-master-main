@@ -28,11 +28,10 @@ jobs:
         run: npm run test
 
       - name: 🏗️ Build Angular App
-        run: npm run build
+        run: npm run build -- --configuration=production
 
       - name: 🚀 Deploy to Firebase
         run: |
           echo "firebase-adminsdk-9gfao@my-resume-website-1.iam.gserviceaccount.com" > $HOME/firebase-key.json
-          firebase deploy --only hosting --token "$(cat $HOME/firebase-key.json)"
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: $HOME/firebase-key.json
+          export GOOGLE_APPLICATION_CREDENTIALS=$HOME/firebase-key.json
+          firebase deploy --only hosting
