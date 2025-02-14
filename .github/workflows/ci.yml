@@ -26,7 +26,7 @@ jobs:
         run: npm run test -- --changedSince=origin/main  # Optimized test execution
 
       - name: 🏗️ Build Angular App (Optimized)
-        run: npm run build -- --configuration=production --parallel --maxWorkers=2
+        run: npm run build
 
       - name: 🚀 Deploy to Firebase (Using Service Account)
         env:
