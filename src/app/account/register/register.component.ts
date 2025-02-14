@@ -6,8 +6,6 @@ import { AuthService } from "../../../services/auth.service";
 import { NgIf } from "@angular/common";
 
 
-
-
 export interface User {
 
   uid: string;

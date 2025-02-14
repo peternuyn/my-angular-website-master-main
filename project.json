@@ -75,27 +75,13 @@
       "executor": "@angular-devkit/build-angular:extract-i18n"
     },
     "test": {
-      "executor": "@angular-devkit/build-angular:karma",
+      "executor": "@nrwl/jest:jest",
       "options": {
-        "polyfills": [
-          "zone.js",
-          "zone.js/testing"
-        ],
-        "tsConfig": "tsconfig.spec.json",
-        "inlineStyleLanguage": "scss",
-        "assets": [
-          "src/favicon.ico",
-          "src/assets",
-          {
-            "glob": "**/*",
-            "input": "public"
-          }
-        ],
-        "styles": [
-          "src/styles.scss"
-        ],
-        "scripts": []
+        "outputs": ["{workspaceRoot}/coverage/my-angular-website"],
+        "jestConfig": "jest.config.js",
+        "passWithNoTests": true
       }
     }
+
   }
 }

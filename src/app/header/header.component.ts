@@ -65,4 +65,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
     localStorage.setItem('theme', this.theme);
     this.themeChange.emit(this.theme);
   }
+
+  signOut() {
+    this.authService.logout();
+  }
 }
