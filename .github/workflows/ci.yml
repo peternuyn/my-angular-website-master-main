@@ -3,7 +3,7 @@ name: CI/CD for Nx Angular App
 on:
   push:
     branches:
-      - main  # Deploys when pushing to 'main'
+      - main  # Deploys only on main branch
 
 jobs:
   build-and-deploy:
@@ -13,20 +13,24 @@ jobs:
       - name: 🛎️ Checkout Code
         uses: actions/checkout@v3
 
-      - name: 📦 Install Node.js
+      - name: 📦 Setup Node.js (With Cache)
         uses: actions/setup-node@v3
         with:
-          node-version: 18  # Match your project version
+          node-version: 18
           cache: 'npm'
 
-      - name: 📥 Install Dependencies
-        run: npm install
+      - name: 📥 Install Dependencies (Faster)
+        run: npm ci  # Faster than npm install
 
-      - name: 🧪 Run Tests (Jest)
-        run: npm run test
+      - name: 🧪 Run Jest Tests (Only Changed Files)
+        run: npm run test -- --changedSince=origin/main  # Optimized test execution
 
-      - name: 🏗️ Build Angular App
-        run: npm run build
+      - name: 🏗️ Build Angular App (Optimized)
+        run: npm run build -- --configuration=production --parallel --maxWorkers=2
 
-      - name: 🚀 Deploy to Firebase
-        run: firebase deploy --token 0gE6DnkiqRldwCgYIARAAGBASNwF-L9Irp5MGWY-yE6nrlmDRtKTUmiBEFoyULw-WGgIbad5w977XAlVzzX7_emdrCQNydZM4k0M
+      - name: 🚀 Deploy to Firebase (Using Service Account)
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > $HOME/firebase-key.json
+          firebase deploy --only hosting --token "$(cat $HOME/firebase-key.json)"

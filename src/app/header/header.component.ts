@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
-import { AuthService } from '../../auth.service';
+import { AuthService } from '../../services/auth.service';
 import { User } from '../account/register/register.component';
 import { Firestore, collectionData, collection } from '@angular/fire/firestore';
 
