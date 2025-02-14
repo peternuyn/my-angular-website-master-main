@@ -25,19 +25,32 @@ jobs:
       - name: 📥 Install Firebase CLI
         run: npm install -g firebase-tools
 
+      - name: Check Firebase Service Account Secret
+        run: |
+          if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" ]; then
+            echo "Firebase service account key not found!"
+            exit 1
+          else
+            echo "Firebase service account key found."
+          fi
+
       - name: 🧪 Run Tests (Jest)
         run: npm run test
 
       - name: 🏗️ Build Angular App
         run: npm run build -- --configuration=production
 
+      - name: Verify firebase-key.json creation
+        run: |
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" > $HOME/firebase-key.json
+          if [ -f "$HOME/firebase-key.json" ]; then
+            echo "Firebase key file created successfully!"
+          else
+            echo "Firebase key file not created."
+            exit 1
+          fi
+
       - name: 🚀 Deploy to Firebase
         run: |
-          # Create a JSON file from the secret stored in GitHub Secrets
-          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > $HOME/firebase-key.json
-          
-          # Set the GOOGLE_APPLICATION_CREDENTIALS environment variable to authenticate
           export GOOGLE_APPLICATION_CREDENTIALS=$HOME/firebase-key.json
-          
-          # Deploy to Firebase
           firebase deploy --only hosting
