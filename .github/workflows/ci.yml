@@ -31,6 +31,8 @@ jobs:
         run: npm run build
 
       - name: 🚀 Deploy to Firebase
-        run: firebase deploy --only hosting --token "$(cat $HOME/firebase-key.json)"
+        run: |
+          echo "firebase-adminsdk-9gfao@my-resume-website-1.iam.gserviceaccount.com" > $HOME/firebase-key.json
+          firebase deploy --only hosting --token "$(cat $HOME/firebase-key.json)"
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: firebase-adminsdk-9gfao@my-resume-website-1.iam.gserviceaccount.com
+          GOOGLE_APPLICATION_CREDENTIALS: $HOME/firebase-key.json
