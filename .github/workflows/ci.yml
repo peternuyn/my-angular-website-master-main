@@ -1,0 +1,32 @@
+name: CI/CD for Nx Angular App
+
+on:
+  push:
+    branches:
+      - main  # Deploys when pushing to 'main'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🛎️ Checkout Code
+        uses: actions/checkout@v3
+
+      - name: 📦 Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18  # Match your project version
+          cache: 'npm'
+
+      - name: 📥 Install Dependencies
+        run: npm install
+
+      - name: 🧪 Run Tests (Jest)
+        run: npm run test
+
+      - name: 🏗️ Build Angular App
+        run: npm run build
+
+      - name: 🚀 Deploy to Firebase
+        run: firebase deploy --token 0gE6DnkiqRldwCgYIARAAGBASNwF-L9Irp5MGWY-yE6nrlmDRtKTUmiBEFoyULw-WGgIbad5w977XAlVzzX7_emdrCQNydZM4k0M
