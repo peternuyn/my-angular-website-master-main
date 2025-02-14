@@ -30,7 +30,7 @@ jobs:
 
       - name: 🚀 Deploy to Firebase (Using Service Account)
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GOOGLE_APPLICATION_CREDENTIALS: firebase-adminsdk-9gfao@my-resume-website-1.iam.gserviceaccount.com
         run: |
-          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > $HOME/firebase-key.json
+          echo "firebase-adminsdk-9gfao@my-resume-website-1.iam.gserviceaccount.com" > $HOME/firebase-key.json
           firebase deploy --only hosting --token "$(cat $HOME/firebase-key.json)"
