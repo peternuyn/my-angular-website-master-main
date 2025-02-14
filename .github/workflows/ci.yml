@@ -3,7 +3,8 @@ name: CI/CD for Nx Angular App
 on:
   push:
     branches:
-      - main  # Deploys only on main branch
+      - main  # Deploys when pushing to 'main'
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -28,11 +29,15 @@ jobs:
         run: npm run test
 
       - name: 🏗️ Build Angular App
-        run: npm run build
+        run: npm run build -- --configuration=production
 
       - name: 🚀 Deploy to Firebase
         run: |
-          echo "firebase-adminsdk-9gfao@my-resume-website-1.iam.gserviceaccount.com" > $HOME/firebase-key.json
-          firebase deploy --only hosting --token "$(cat $HOME/firebase-key.json)"
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: $HOME/firebase-key.json
+          # Create a JSON file from the secret stored in GitHub Secrets
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" > $HOME/firebase-key.json
+          
+          # Set the GOOGLE_APPLICATION_CREDENTIALS environment variable to authenticate
+          export GOOGLE_APPLICATION_CREDENTIALS=$HOME/firebase-key.json
+          
+          # Deploy to Firebase
+          firebase deploy --only hosting
