@@ -5,8 +5,6 @@ import { DocumentData, Firestore, getFirestore, provideFirestore } from '@angula
 import { RouterTestingModule } from '@angular/router/testing';
 import { of } from 'rxjs';
 import { User } from '../account/register/register.component';
-import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
-import { firebaseConfig } from '../app.config';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 
 describe('HeaderComponent', () => {
