@@ -6,7 +6,7 @@ import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { getAuth, provideAuth } from '@angular/fire/auth';
 import { provideFirestore, getFirestore } from '@angular/fire/firestore'; // Import Firestore
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyDYEbWBA_2lpvwff8KDIrQKSS2dLVfLVRc",
   authDomain: "my-resume-website-1.firebaseapp.com",
   projectId: "my-resume-website-1",

@@ -23,7 +23,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
   currentUserDisplay: string = '';
   users: User[] = [];
   errorMessage: string = '';
-
   @Output() themeChange = new EventEmitter<string>();
 
   ngOnInit(): void {
@@ -33,11 +32,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
       this.theme = savedTheme;
       this.themeChange.emit(this.theme);
     }
-
     // Fetch Firestore users
     const usersCollection = collection(this.firestore, 'users');
     this.userSubscription = collectionData(usersCollection, { idField: 'id' }).subscribe(
-      (users: User[]) => {
+      (users: any[]) => {
         this.users = users;
 
         // Set current user details
