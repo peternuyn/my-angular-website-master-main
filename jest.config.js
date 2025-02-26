@@ -15,6 +15,10 @@ module.exports = {
     ],
   },
   moduleFileExtensions: ["ts", "html", "js", "json"],
+  extensionsToTreatAsEsm: ['.ts'],
+  moduleNameMapper: {
+    '^(\\..*)\\.js$': '$1',
+  },
   coverageDirectory: "<rootDir>/coverage/",
   coverageReporters: ["text", "lcov"],
   collectCoverageFrom: ["src/**/*.ts", "!src/main.ts", "!src/polyfills.ts"],

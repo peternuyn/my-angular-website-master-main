@@ -26,15 +26,15 @@ export class TemplateComponent {
   isEditable: boolean = false;
   authService = inject(AuthService);
   userProfileService = inject(UserProfileService);
-  uid: string = (this.authService.getCurrentUser() as { uid: string })?.uid || '';
+  uid: string =
+    (this.authService.getCurrentUser() as { uid: string })?.uid || '';
   theme: string = 'light';
   user: any;
   private firestoreSubscription!: Subscription;
   constructor(private route: ActivatedRoute, private firestore: Firestore) {}
   isLoading: boolean = true;
-  
-  ngOnInit(): void {
 
+  ngOnInit(): void {
     const userId = this.route.snapshot.paramMap.get('id');
     console.log('User ID from route:', userId);
     if (!userId) return; // Exit early if no userId
@@ -67,9 +67,20 @@ export class TemplateComponent {
         this.isLoading = false;
       }
     );
-   // Check if the current user is the owner of the profile
-    const currentUser = this.authService.getCurrentUser();  // Get the current user
-    this.isEditable = currentUser?.uid === userId; // Boolean comparison
+
+    // Check if the current user is the owner of the profile
+    const currentUser = this.authService.getCurrentUser(); // Get the current user
+    console.log('Current user UID:', currentUser?.uid);
+    console.log('User ID from route:', userId);
+
+    if (currentUser?.uid === userId) {
+      this.isEditable = true; // Boolean comparison
+      console.log('isEditable:', this.isEditable);
+    } else {
+      console.log('User is not the owner.');
+    }
+    this.isLoading = false;
+    console.log(this.authService.getCurrentUser());
   }
 
   ngOnDestroy(): void {
@@ -85,12 +96,13 @@ export class TemplateComponent {
 
   /**
    * Method to handle the image selection
-   * @param event 
+   * @param event
    * @returns void
    */
   onImageSelected(event: Event): void {
     const fileInput = event.target as HTMLInputElement;
-    if (!(fileInput instanceof HTMLInputElement) || !fileInput.files?.length) return; // Early exit if no files
+    if (!(fileInput instanceof HTMLInputElement) || !fileInput.files?.length)
+      return; // Early exit if no files
 
     const file = fileInput.files[0];
     const reader = new FileReader();
@@ -98,7 +110,6 @@ export class TemplateComponent {
     reader.onerror = () => console.error('File reading failed');
     reader.readAsDataURL(file);
   }
-
 
   /**
    *  Method to save the profile data
@@ -147,12 +158,14 @@ export class TemplateComponent {
     let yPosition = margin; // Starting Y position
     // Set font (use a more professional font like Times New Roman)
     doc.setFont('times', 'normal');
-    
-    // Name 
+
+    // Name
     doc.setFontSize(24);
     doc.setFont('courier', 'bold');
     const title = `${this.name}`;
-    const titleWidth = doc.getStringUnitWidth(title) * doc.getFontSize() / doc.internal.scaleFactor;
+    const titleWidth =
+      (doc.getStringUnitWidth(title) * doc.getFontSize()) /
+      doc.internal.scaleFactor;
     doc.text(title, (pageWidth - titleWidth) / 2, yPosition); // Center-align the title
     yPosition += lineHeight * 2; // Space after title
 
@@ -160,7 +173,9 @@ export class TemplateComponent {
     doc.setFont('times', 'italic');
     doc.setFontSize(19);
     const titleText = ` ${this.title}`;
-    const titleTextWidth = doc.getStringUnitWidth(titleText) * doc.getFontSize() / doc.internal.scaleFactor;
+    const titleTextWidth =
+      (doc.getStringUnitWidth(titleText) * doc.getFontSize()) /
+      doc.internal.scaleFactor;
     doc.text(titleText, (pageWidth - titleTextWidth) / 2, yPosition); // Center-align title
     yPosition += lineHeight; // Space after title
 
@@ -171,7 +186,14 @@ export class TemplateComponent {
       imageHeight = 50; // Image height in mm
       const xPosition = margin + 10; // Left-align the image but not on the margin
       const yPositionImage = yPosition; // Y position for image, directly after text
-      doc.addImage(this.profileImageUrl as string, 'JPEG', xPosition, yPositionImage, imageWidth, imageHeight);
+      doc.addImage(
+        this.profileImageUrl as string,
+        'JPEG',
+        xPosition,
+        yPositionImage,
+        imageWidth,
+        imageHeight
+      );
       yPosition += imageHeight + 10; // Adjust yPosition after adding image
     }
 
@@ -179,12 +201,17 @@ export class TemplateComponent {
     doc.setFontSize(14);
     doc.setFont('times', 'bold');
     const aboutMeHeading = '';
-    const aboutMeHeadingWidth = doc.getStringUnitWidth(aboutMeHeading) * doc.getFontSize() / doc.internal.scaleFactor;
+    const aboutMeHeadingWidth =
+      (doc.getStringUnitWidth(aboutMeHeading) * doc.getFontSize()) /
+      doc.internal.scaleFactor;
     doc.text(aboutMeHeading, (pageWidth - aboutMeHeadingWidth) / 2, yPosition); // Center-align heading
     yPosition += lineHeight;
     doc.setFontSize(12);
     doc.setFont('times', 'normal');
-    const aboutMeLines = doc.splitTextToSize(this.aboutMe, pageWidth - 2 * margin); // Justify text within page width
+    const aboutMeLines = doc.splitTextToSize(
+      this.aboutMe,
+      pageWidth - 2 * margin
+    ); // Justify text within page width
     doc.text(aboutMeLines, margin, yPosition);
     yPosition += aboutMeLines.length * lineHeight;
 
@@ -192,12 +219,17 @@ export class TemplateComponent {
     doc.setFontSize(14);
     doc.setFont('times', 'bold');
     const contactHeading = 'Contact Information:';
-    const contactHeadingWidth = doc.getStringUnitWidth(contactHeading) * doc.getFontSize() / doc.internal.scaleFactor;
+    const contactHeadingWidth =
+      (doc.getStringUnitWidth(contactHeading) * doc.getFontSize()) /
+      doc.internal.scaleFactor;
     doc.text(contactHeading, (pageWidth - contactHeadingWidth) / 2, yPosition); // Center-align heading
     yPosition += lineHeight;
     doc.setFontSize(12);
     doc.setFont('times', 'normal');
-    const contactLines = doc.splitTextToSize(this.contactInfo, pageWidth - 2 * margin); // Justify text within page width
+    const contactLines = doc.splitTextToSize(
+      this.contactInfo,
+      pageWidth - 2 * margin
+    ); // Justify text within page width
     doc.text(contactLines, margin, yPosition);
     yPosition += contactLines.length * lineHeight;
 
@@ -205,20 +237,32 @@ export class TemplateComponent {
     doc.setFontSize(14);
     doc.setFont('times', 'bold');
     const otherInfoHeading = 'Additional Information:';
-    const otherInfoHeadingWidth = doc.getStringUnitWidth(otherInfoHeading) * doc.getFontSize() / doc.internal.scaleFactor;
-    doc.text(otherInfoHeading, (pageWidth - otherInfoHeadingWidth) / 2, yPosition); // Center-align heading
+    const otherInfoHeadingWidth =
+      (doc.getStringUnitWidth(otherInfoHeading) * doc.getFontSize()) /
+      doc.internal.scaleFactor;
+    doc.text(
+      otherInfoHeading,
+      (pageWidth - otherInfoHeadingWidth) / 2,
+      yPosition
+    ); // Center-align heading
     yPosition += lineHeight;
     doc.setFontSize(12);
     doc.setFont('times', 'normal');
-    const otherInfoLines = doc.splitTextToSize(this.otherInfo, pageWidth - 2 * margin); // Justify text within page width
+    const otherInfoLines = doc.splitTextToSize(
+      this.otherInfo,
+      pageWidth - 2 * margin
+    ); // Justify text within page width
     doc.text(otherInfoLines, margin, yPosition);
     yPosition += otherInfoLines.length * lineHeight * 2; // Extra space before the image
 
     // Footer with contact info or additional text
     doc.setFontSize(10);
     doc.setFont('times', 'italic');
-    const footerText = 'Generated with My Resume App - Contact: your-email@example.com';
-    const footerWidth = doc.getStringUnitWidth(footerText) * doc.getFontSize() / doc.internal.scaleFactor;
+    const footerText =
+      'Generated with My Resume App - Contact: your-email@example.com';
+    const footerWidth =
+      (doc.getStringUnitWidth(footerText) * doc.getFontSize()) /
+      doc.internal.scaleFactor;
     doc.text(footerText, (pageWidth - footerWidth) / 2, 285); // Center-align the footer text
 
     // Save the PDF with the filename 'resume.pdf'
