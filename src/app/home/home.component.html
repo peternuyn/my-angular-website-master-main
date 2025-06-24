@@ -1,55 +1,57 @@
 <!-- Hero Section -->
-<section class="hero min-h-screen bg-base-200 flex items-center">
-    <div class="hero-content text-center">
+<section class="hero min-h-screen bg-base-200 flex items-center px-4 sm:px-6" data-aos="fade-up">
+    <div class="hero-content text-center w-full">
       <div class="max-w-lg mx-auto">
-        <h1 class="text-5xl font-bold text-primary">Create Your Professional Resume in Minutes</h1>
-        <p class="py-6 text-lg text-gray-600">Use our easy-to-follow templates to craft a resume that will make a lasting impression.</p>
-        <div class="flex justify-center space-x-4">
-          <a href="/signup" class="btn btn-primary">Get Started</a>
-          <a href="/about" class="btn btn-secondary">Example</a>
+        <h1 class="text-3xl sm:text-5xl font-bold text-primary" data-aos="fade-down" data-aos-delay="200">Create Your Professional Resume in Minutes</h1>
+        <p class="py-4 sm:py-6 text-base sm:text-lg text-gray-600" data-aos="fade-up" data-aos-delay="400">Use our easy-to-follow templates to craft a resume that will make a lasting impression.</p>
+        <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4" data-aos="fade" data-aos-delay="600">
+          <a href="/signup" class="btn btn-primary hover:scale-105 transition-transform">Get Started</a>
+          <a href="/about" class="btn btn-secondary hover:scale-105 transition-transform">Example</a>
         </div>
       </div>
     </div>
-  </section>
+</section>
+
 <!-- Features Section -->
-<section id="features" class="py-12 bg-base-100">
-    <h2 class="text-4xl font-bold text-center text-primary mb-8">Features</h2>
-    <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-      <div class="card bg-base-200 shadow-lg p-6">
-        <h3 class="text-2xl font-bold mb-4">Easy Editing</h3>
-        <p>Customize your resume with our user-friendly editor and make updates as you grow.</p>
+<section id="features" class="py-8 sm:py-12 bg-base-100 px-4 sm:px-6">
+    <h2 class="text-3xl sm:text-4xl font-bold text-center text-primary mb-6 sm:mb-8" data-aos="fade-down">Features</h2>
+    <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+      <div class="card bg-base-200 shadow-lg p-4 sm:p-6 hover:shadow-2xl transition-shadow" data-aos="fade-right" data-aos-delay="200">
+        <h3 class="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Easy Editing</h3>
+        <p class="text-sm sm:text-base">Customize your resume with our user-friendly editor and make updates as you grow.</p>
       </div>
-      <div class="card bg-base-200 shadow-lg p-6">
-        <h3 class="text-2xl font-bold mb-4">Professional Templates</h3>
-        <p>Select from a variety of professionally designed templates suited for every industry.</p>
+      <div class="card bg-base-200 shadow-lg p-4 sm:p-6 hover:shadow-2xl transition-shadow" data-aos="fade-up" data-aos-delay="400">
+        <h3 class="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Professional Templates</h3>
+        <p class="text-sm sm:text-base">Select from a variety of professionally designed templates suited for every industry.</p>
       </div>
-      <div class="card bg-base-200 shadow-lg p-6">
-        <h3 class="text-2xl font-bold mb-4">One-Click Downloads</h3>
-        <p>Download your resume in PDF format with a single click once you're done editing.</p>
+      <div class="card bg-base-200 shadow-lg p-4 sm:p-6 hover:shadow-2xl transition-shadow" data-aos="fade-left" data-aos-delay="600">
+        <h3 class="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">One-Click Downloads</h3>
+        <p class="text-sm sm:text-base">Download your resume in PDF format with a single click once you're done editing.</p>
       </div>
     </div>
-  </section>
+</section>
+
 <!-- Call to Action Section -->
-<section class="py-12 bg-primary text-base-100">
-    <div class="container mx-auto text-center">
-      <h2 class="text-4xl font-bold">Ready to Land Your Dream Job?</h2>
-      <p class="mt-4 text-lg">Join thousands of users who have created their professional resumes with us.</p>
-      <a href="/create" class="btn btn-accent mt-6">Start Your Resume</a>
+<section class="py-8 sm:py-12 bg-primary text-base-100 px-4 sm:px-6">
+    <div class="container mx-auto text-center" data-aos="zoom-in">
+      <h2 class="text-3xl sm:text-4xl font-bold">Ready to Land Your Dream Job?</h2>
+      <p class="mt-3 sm:mt-4 text-base sm:text-lg" data-aos="fade" data-aos-delay="200">Join thousands of users who have created their professional resumes with us.</p>
+      <a href="/create" class="btn btn-accent mt-4 sm:mt-6 hover:scale-110 transition-transform" data-aos="fade-up" data-aos-delay="400">Start Your Resume</a>
     </div>
-  </section>
+</section>
+
 <!-- Footer -->
-<footer class="footer p-10 bg-base-200 text-base-content">
+<footer class="footer p-6 sm:p-10 bg-base-200 text-base-content" data-aos="fade">
     <div>
-      <span class="footer-title">Company</span> 
-      <a href="#about" class="link link-hover">About us</a> 
-      <a href="#contact" class="link link-hover">Contact</a> 
-      <a href="#" class="link link-hover">Careers</a> 
+      <span class="footer-title text-sm sm:text-base">Company</span> 
+      <a href="#about" class="link link-hover transition-colors hover:text-primary text-sm sm:text-base">About us</a> 
+      <a href="#contact" class="link link-hover transition-colors hover:text-primary text-sm sm:text-base">Contact</a> 
+      <a href="#" class="link link-hover transition-colors hover:text-primary text-sm sm:text-base">Careers</a> 
     </div> 
     <div>
-      <span class="footer-title">Social</span> 
-      <a href="#" class="link link-hover">Twitter</a> 
-      <a href="#" class="link link-hover">Instagram</a> 
-      <a href="#" class="link link-hover">Facebook</a>
+      <span class="footer-title text-sm sm:text-base">Social</span> 
+      <a href="#" class="link link-hover transition-colors hover:text-primary text-sm sm:text-base">Twitter</a> 
+      <a href="#" class="link link-hover transition-colors hover:text-primary text-sm sm:text-base">Instagram</a> 
+      <a href="#" class="link link-hover transition-colors hover:text-primary text-sm sm:text-base">Facebook</a>
     </div> 
-  </footer>
-        
+</footer>

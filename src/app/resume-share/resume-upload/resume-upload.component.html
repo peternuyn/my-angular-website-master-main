@@ -1,0 +1,182 @@
+<div class="max-w-2xl mx-auto">
+  <div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+      <h2 class="card-title text-2xl mb-6">Upload Your Resume</h2>
+      
+      <!-- Success Message -->
+      <div *ngIf="success" class="alert alert-success mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>{{ success }}</span>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="error" class="alert alert-error mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>{{ error }}</span>
+      </div>
+
+      <form [formGroup]="uploadForm" (ngSubmit)="onSubmit()" class="space-y-6">
+        <!-- Name Field -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Full Name *</span>
+          </label>
+          <input 
+            type="text" 
+            placeholder="Enter your full name" 
+            class="input input-bordered" 
+            formControlName="name"
+            [class.input-error]="uploadForm.get('name')?.invalid && uploadForm.get('name')?.touched">
+          <label class="label" *ngIf="uploadForm.get('name')?.invalid && uploadForm.get('name')?.touched">
+            <span class="label-text-alt text-error">
+              <span *ngIf="uploadForm.get('name')?.errors?.['required']">Name is required</span>
+              <span *ngIf="uploadForm.get('name')?.errors?.['minlength']">Name must be at least 2 characters</span>
+            </span>
+          </label>
+        </div>
+
+        <!-- Email Field -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Email Address *</span>
+          </label>
+          <input 
+            type="email" 
+            placeholder="Enter your email address" 
+            class="input input-bordered" 
+            formControlName="email"
+            [class.input-error]="uploadForm.get('email')?.invalid && uploadForm.get('email')?.touched">
+          <label class="label" *ngIf="uploadForm.get('email')?.invalid && uploadForm.get('email')?.touched">
+            <span class="label-text-alt text-error">
+              <span *ngIf="uploadForm.get('email')?.errors?.['required']">Email is required</span>
+              <span *ngIf="uploadForm.get('email')?.errors?.['email']">Please enter a valid email</span>
+            </span>
+          </label>
+        </div>
+
+        <!-- Title Field -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Professional Title</span>
+          </label>
+          <input 
+            type="text" 
+            placeholder="e.g., Software Engineer, UX Designer" 
+            class="input input-bordered" 
+            formControlName="title"
+            [class.input-error]="uploadForm.get('title')?.invalid && uploadForm.get('title')?.touched">
+          <label class="label" *ngIf="uploadForm.get('title')?.invalid && uploadForm.get('title')?.touched">
+            <span class="label-text-alt text-error">
+              <span *ngIf="uploadForm.get('title')?.errors?.['minlength']">Title must be at least 3 characters</span>
+            </span>
+          </label>
+        </div>
+
+        <!-- Description Field -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Brief Description</span>
+          </label>
+          <textarea 
+            placeholder="Brief description of your background and expertise..." 
+            class="textarea textarea-bordered h-24" 
+            formControlName="description"
+            [class.textarea-error]="uploadForm.get('description')?.invalid && uploadForm.get('description')?.touched"></textarea>
+          <label class="label" *ngIf="uploadForm.get('description')?.invalid && uploadForm.get('description')?.touched">
+            <span class="label-text-alt text-error">
+              <span *ngIf="uploadForm.get('description')?.errors?.['maxlength']">Description must be less than 500 characters</span>
+            </span>
+          </label>
+        </div>
+
+        <!-- Skills Field -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Skills (comma-separated)</span>
+          </label>
+          <input 
+            type="text" 
+            placeholder="e.g., JavaScript, React, Node.js, Python" 
+            class="input input-bordered" 
+            formControlName="skills">
+          <label class="label">
+            <span class="label-text-alt">Separate skills with commas</span>
+          </label>
+        </div>
+
+        <!-- Experience Field -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Experience Summary</span>
+          </label>
+          <textarea 
+            placeholder="Brief summary of your experience..." 
+            class="textarea textarea-bordered h-20" 
+            formControlName="experience"
+            [class.textarea-error]="uploadForm.get('experience')?.invalid && uploadForm.get('experience')?.touched"></textarea>
+          <label class="label" *ngIf="uploadForm.get('experience')?.invalid && uploadForm.get('experience')?.touched">
+            <span class="label-text-alt text-error">
+              <span *ngIf="uploadForm.get('experience')?.errors?.['maxlength']">Experience must be less than 1000 characters</span>
+            </span>
+          </label>
+        </div>
+
+        <!-- File Upload -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Resume File (PDF) *</span>
+          </label>
+          <input 
+            type="file" 
+            id="resumeFile"
+            accept=".pdf"
+            class="file-input file-input-bordered w-full" 
+            (change)="onFileSelected($event)"
+            [class.file-input-error]="!selectedFile && uploadForm.touched">
+          
+          <!-- File Info -->
+          <div *ngIf="selectedFile" class="mt-2 p-3 bg-base-200 rounded-lg">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-success" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+              </svg>
+              <span class="font-medium">{{ getFileName() }}</span>
+              <span class="text-sm text-gray-500">({{ getFileSize() }})</span>
+            </div>
+          </div>
+          
+          <label class="label">
+            <span class="label-text-alt">Maximum file size: 5MB. Only PDF files are accepted.</span>
+          </label>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="form-control mt-8">
+          <button 
+            type="submit" 
+            class="btn btn-primary w-full" 
+            [disabled]="uploading || uploadForm.invalid || !selectedFile">
+            <span *ngIf="uploading" class="loading loading-spinner loading-sm"></span>
+            {{ uploading ? 'Uploading...' : 'Upload Resume' }}
+          </button>
+        </div>
+      </form>
+
+      <!-- Guidelines -->
+      <div class="mt-8 p-4 bg-base-200 rounded-lg">
+        <h3 class="font-semibold mb-2">Upload Guidelines:</h3>
+        <ul class="text-sm space-y-1">
+          <li>• Only PDF files are accepted</li>
+          <li>• Maximum file size: 5MB</li>
+          <li>• Ensure your resume is up-to-date and professional</li>
+          <li>• Include relevant contact information</li>
+          <li>• Your resume will be publicly visible to other users</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div> 

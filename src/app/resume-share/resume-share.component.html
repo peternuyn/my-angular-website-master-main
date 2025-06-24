@@ -1,0 +1,121 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="text-center mb-8">
+    <h1 class="text-4xl font-bold mb-4">Resume Sharing Platform</h1>
+    <p class="text-lg text-gray-600">Share your resume with the community or browse others' resumes</p>
+    
+    <!-- Template Link -->
+    <div class="mt-4">
+      <a 
+        [routerLink]="['/user', currentUserId]" 
+        class="btn btn-outline btn-sm"
+        *ngIf="currentUserId">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        Create Your Resume Template
+      </a>
+    </div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="flex justify-center mb-8">
+    <div class="tabs tabs-boxed">
+      <button 
+        class="tab" 
+        [class.tab-active]="activeTab === 'browse'"
+        (click)="setActiveTab('browse')">
+        Browse Resumes
+      </button>
+      <button 
+        class="tab" 
+        [class.tab-active]="activeTab === 'upload'"
+        (click)="setActiveTab('upload')">
+        Upload Resume
+      </button>
+    </div>
+  </div>
+
+  <!-- Browse Tab -->
+  <div *ngIf="activeTab === 'browse'">
+    <!-- Search Bar -->
+    <div class="mb-6">
+      <div class="flex gap-2 max-w-md mx-auto">
+        <input 
+          type="text" 
+          placeholder="Search resumes by name, title, skills..." 
+          class="input input-bordered flex-1"
+          [(ngModel)]="searchQuery"
+          (keyup.enter)="searchResumes()">
+        <button 
+          class="btn btn-primary" 
+          (click)="searchResumes()"
+          [disabled]="loading">
+          <span *ngIf="loading" class="loading loading-spinner loading-sm"></span>
+          Search
+        </button>
+        <button 
+          *ngIf="searchQuery" 
+          class="btn btn-ghost" 
+          (click)="clearSearch()">
+          Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <div *ngIf="error" class="alert alert-error mb-6 max-w-2xl mx-auto">
+      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span>{{ error }}</span>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="text-center py-8">
+      <span class="loading loading-spinner loading-lg"></span>
+      <p class="mt-4">Loading resumes...</p>
+    </div>
+
+    <!-- Resume List -->
+    <app-resume-list 
+      *ngIf="!loading && !error"
+      [resumes]="resumes"
+      (resumeDeleted)="onResumeDeleted()">
+    </app-resume-list>
+
+    <!-- Empty State -->
+    <div *ngIf="!loading && !error && resumes.length === 0" class="text-center py-12">
+      <div class="max-w-md mx-auto">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No resumes found</h3>
+        <p class="mt-1 text-sm text-gray-500">
+          {{ searchQuery ? 'Try adjusting your search terms.' : 'Be the first to share your resume!' }}
+        </p>
+        <div class="mt-6 space-y-2">
+          <button 
+            class="btn btn-primary"
+            (click)="setActiveTab('upload')">
+            Upload Resume
+          </button>
+          <div *ngIf="currentUserId">
+            <p class="text-sm text-gray-500 mt-2">or</p>
+            <a 
+              [routerLink]="['/user', currentUserId]" 
+              class="btn btn-outline btn-sm">
+              Create Resume Template
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload Tab -->
+  <div *ngIf="activeTab === 'upload'">
+    <app-resume-upload 
+      (resumeUploaded)="onResumeUploaded()">
+    </app-resume-upload>
+  </div>
+</div> 

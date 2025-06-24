@@ -1,0 +1,88 @@
+// Custom styles for project management component
+.card {
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.form-control {
+  .label {
+    .label-text-alt {
+      font-size: 0.75rem;
+    }
+  }
+}
+
+.alert {
+  border-radius: 0.5rem;
+  
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+// Responsive grid adjustments
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+// Loading spinner styles
+.loading {
+  &.loading-spinner {
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Button hover effects
+.btn {
+  transition: all 0.2s ease;
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+}
+
+// Card image hover effect
+figure img {
+  transition: transform 0.3s ease;
+}
+
+.card:hover figure img {
+  transform: scale(1.05);
+}
+
+// Technology badges
+.badge-primary {
+  background-color: hsl(var(--p));
+  color: hsl(var(--pc));
+}
+
+// Status badge for in-progress projects
+.badge-warning {
+  background-color: hsl(var(--wa));
+  color: hsl(var(--wac));
+} 
