@@ -23,6 +23,9 @@ jobs:
       - name: Build Angular app
         run: npm run build
 
+      - name: Install Functions dependencies
+        run: cd functions && npm ci
+
       - name: Deploy to Firebase Hosting and Functions
         uses: w9jds/firebase-action@v13.0.2
         with:
