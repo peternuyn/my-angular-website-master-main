@@ -9,8 +9,52 @@
     ],
     "rewrites": [
       {
-        "source": "/api/**",
-        "function": "api"
+        "source": "/api/health",
+        "function": "health"
+      },
+      {
+        "source": "/api/resumes/upload",
+        "function": "uploadResume"
+      },
+      {
+        "source": "/api/resumes/search/**",
+        "function": "searchResumes"
+      },
+      {
+        "source": "/api/resumes/user/**",
+        "function": "getUserResume"
+      },
+      {
+        "source": "/api/resumes/*/download",
+        "function": "downloadResume"
+      },
+      {
+        "source": "/api/resumes/*/view",
+        "function": "viewResume"
+      },
+      {
+        "source": "/api/resumes/*",
+        "function": "getResume"
+      },
+      {
+        "source": "/api/resumes",
+        "function": "getAllResumes"
+      },
+      {
+        "source": "/api/projects/create",
+        "function": "createProject"
+      },
+      {
+        "source": "/api/projects/user/**",
+        "function": "getUserProjects"
+      },
+      {
+        "source": "/api/projects/*",
+        "function": "getProject"
+      },
+      {
+        "source": "/api/projects",
+        "function": "getAllProjects"
       },
       {
         "source": "**",
@@ -28,10 +72,6 @@
         "firebase-debug.log",
         "firebase-debug.*.log",
         "*.local"
-      ],
-      "predeploy": [
-        "npm --prefix \"$RESOURCE_DIR\" run lint",
-        "npm --prefix \"$RESOURCE_DIR\" run build"
       ]
     }
   ]

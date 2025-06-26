@@ -85,11 +85,11 @@ export class ProjectsComponent implements OnInit {
     this.error = '';
 
     this.projectService.getUserProjects(currentUser.uid).subscribe({
-      next: (response) => {
-        if (response.success && response.data.length > 0) {
+      next: (projects) => {
+        if (projects.length > 0) {
           // Replace demo projects with user's actual projects
-          this.projects = response.data.filter((p: Project) => p.status === 'completed');
-          this.workingOnProjects = response.data.filter((p: Project) => p.status === 'in-progress');
+          this.projects = projects.filter((p: Project) => p.status === 'completed');
+          this.workingOnProjects = projects.filter((p: Project) => p.status === 'in-progress');
           this.hasUserProjects = true;
         }
         this.loading = false;

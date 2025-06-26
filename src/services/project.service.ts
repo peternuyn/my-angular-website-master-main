@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
 export interface Project {
   id: string;
@@ -39,23 +39,29 @@ export class ProjectService {
   constructor(private http: HttpClient) { }
 
   // Get all projects
-  getAllProjects(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/projects`);
+  getAllProjects(): Observable<Project[]> {
+    return this.http.get<any>(`${this.apiUrl}/projects`).pipe(
+      map(response => response.data || [])
+    );
   }
 
   // Get projects by user ID
-  getUserProjects(userId: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/projects/user/${userId}`);
+  getUserProjects(userId: string): Observable<Project[]> {
+    return this.http.get<any>(`${this.apiUrl}/projects/user/${userId}`).pipe(
+      map(response => response.data || [])
+    );
   }
 
   // Get a specific project
-  getProject(id: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/projects/${id}`);
+  getProject(id: string): Observable<Project> {
+    return this.http.get<any>(`${this.apiUrl}/projects/${id}`).pipe(
+      map(response => response.data)
+    );
   }
 
   // Create a new project
   createProject(data: ProjectCreateData): Observable<any> {
-    return this.http.post(`${this.apiUrl}/projects`, data);
+    return this.http.post(`${this.apiUrl}/projects/create`, data);
   }
 
   // Update an existing project

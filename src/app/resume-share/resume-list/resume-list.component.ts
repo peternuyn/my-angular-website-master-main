@@ -16,35 +16,25 @@ export class ResumeListComponent {
   constructor(private resumeService: ResumeService) {}
 
   downloadResume(resume: Resume): void {
-    // Use the download URL from Firebase Storage
-    if (resume.downloadUrl) {
-      const link = document.createElement('a');
-      link.href = resume.downloadUrl;
-      link.download = resume.originalName;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else {
-      // Fallback to API call if download URL is not available
-      this.resumeService.downloadResume(resume.id).subscribe({
-        next: (response) => {
-          if (response.success && response.data.downloadUrl) {
-            const link = document.createElement('a');
-            link.href = response.data.downloadUrl;
-            link.download = resume.originalName;
-            link.target = '_blank';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          }
-        },
-        error: (err) => {
-          console.error('Error downloading resume:', err);
-          alert('Error downloading resume. Please try again.');
-        }
-      });
-    }
+    // Use the download endpoint to get the actual file
+    this.resumeService.downloadResume(resume.id).subscribe({
+      next: (blob: Blob) => {
+        // Create a blob URL and trigger download
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = resume.originalName || `${resume.name}_resume.txt`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        console.error('Error downloading resume:', err);
+        alert('Error downloading resume. Please try again.');
+      }
+    });
   }
 
   viewResume(resume: Resume): void {
@@ -78,9 +68,19 @@ export class ResumeListComponent {
     }
   }
 
-  formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+  formatDate(dateInput: any): string {
+    if (!dateInput) return '';
+    // Firestore Timestamp object
+    if (typeof dateInput === 'object' && dateInput.seconds) {
+      return new Date(dateInput.seconds * 1000).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+    // ISO string or JS Date
+    const date = new Date(dateInput);
+    return isNaN(date.getTime()) ? '' : date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'

@@ -1,162 +1,248 @@
+/**
+ * Import function triggers from their respective submodules:
+ *
+ * const {onCall} = require("firebase-functions/v2/https");
+ * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
+ *
+ * See a full list of supported triggers at https://firebase.google.com/docs/functions
+ */
+
+const {setGlobalOptions} = require("firebase-functions");
+const {onRequest} = require("firebase-functions/https");
+const logger = require("firebase-functions/logger");
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const cors = require('cors')({ origin: true });
-const multer = require('multer');
-const path = require('path');
+
+// For cost control, you can set the maximum number of containers that can be
+// running at the same time. This helps mitigate the impact of unexpected
+// traffic spikes by instead downgrading performance. This limit is a
+// per-function limit. You can override the limit for each function using the
+// `maxInstances` option in the function's options, e.g.
+// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
+// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
+// functions should each use functions.runWith({ maxInstances: 10 }) instead.
+// In the v1 API, each function can only serve one request per container, so
+// this will be the maximum concurrent request count.
+setGlobalOptions({ maxInstances: 10 });
 
 // Initialize Firebase Admin
 admin.initializeApp();
 
+// Get Firestore database
 const db = admin.firestore();
-const bucket = admin.storage().bucket();
 
-// Configure multer for file uploads
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-  },
-});
-
-// Helper function to handle file uploads
-const uploadFileToStorage = async (file, userId) => {
-  const fileName = `${userId}_${Date.now()}_${file.originalname}`;
-  const fileUpload = bucket.file(`resumes/${fileName}`);
-  
-  const blobStream = fileUpload.createWriteStream({
-    metadata: {
-      contentType: file.mimetype,
-    },
-  });
-
-  return new Promise((resolve, reject) => {
-    blobStream.on('error', (error) => {
-      reject(error);
-    });
-
-    blobStream.on('finish', async () => {
-      // Make the file public
-      await fileUpload.makePublic();
-      
-      // Get the public URL
-      const publicUrl = `https://storage.googleapis.com/${bucket.name}/resumes/${fileName}`;
-      
-      resolve({
-        filename: fileName,
-        originalName: file.originalname,
-        downloadUrl: publicUrl,
-        fileSize: file.size
-      });
-    });
-
-    blobStream.end(file.buffer);
+// Middleware to handle CORS
+const corsHandler = (req, res, next) => {
+  cors(req, res, () => {
+    next();
   });
 };
 
-// Resume Management APIs - Matching Angular service expectations
-const getPublicResumes = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
-    try {
-      const resumesSnapshot = await db.collection('resumes')
-        .where('isPublic', '==', true)
-        .orderBy('uploadedAt', 'desc')
-        .limit(20)
-        .get();
-
-      const resumes = [];
-      resumesSnapshot.forEach(doc => {
-        const data = doc.data();
-        resumes.push({
-          id: doc.id,
-          name: data.name,
-          email: data.email,
-          title: data.title,
-          description: data.description,
-          skills: data.skills,
-          experience: data.experience,
-          filename: data.filename,
-          originalName: data.originalName,
-          downloadUrl: data.downloadUrl,
-          fileSize: data.fileSize,
-          uploadedAt: data.uploadedAt,
-          updatedAt: data.updatedAt,
-          downloads: data.downloads || 0,
-          views: data.views || 0,
-          isUpdated: data.isUpdated || false
-        });
-      });
-
-      res.status(200).json({
-        success: true,
-        resumes
-      });
-    } catch (error) {
-      console.error('Error getting public resumes:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
+// Health check endpoint
+exports.health = functions.https.onRequest((req, res) => {
+  corsHandler(req, res, () => {
+    res.json({
+      success: true,
+      message: 'Firebase Functions are running',
+      timestamp: new Date().toISOString()
+    });
   });
 });
 
-const getResume = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
-    try {
-      const { id } = req.params;
-      
-      if (!id) {
-        return res.status(400).json({
+// Resume Management Functions
+
+// Get all resumes (GET) or Upload resume (POST)
+exports.getAllResumes = functions.https.onRequest((req, res) => {
+  corsHandler(req, res, async () => {
+    if (req.method === 'GET') {
+      // Get all resumes
+      try {
+        console.log('Fetching all resumes...');
+        
+        const resumesSnapshot = await db.collection('resumes').get();
+        const resumes = [];
+        
+        resumesSnapshot.forEach(doc => {
+          resumes.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+
+        console.log(`Returning ${resumes.length} resumes`);
+        res.json({
+          success: true,
+          resumes: resumes
+        });
+      } catch (error) {
+        console.error('Error getting resumes:', error);
+        res.status(500).json({
           success: false,
-          error: 'Resume ID is required'
+          error: error.message
         });
       }
-
-      const resumeDoc = await db.collection('resumes').doc(id).get();
-      
-      if (!resumeDoc.exists) {
-        return res.status(404).json({
-          success: false,
-          error: 'Resume not found'
-        });
-      }
-
-      const data = resumeDoc.data();
-      res.status(200).json({
-        success: true,
-        resume: {
-          id: resumeDoc.id,
-          name: data.name,
-          email: data.email,
-          title: data.title,
-          description: data.description,
-          skills: data.skills,
-          experience: data.experience,
-          filename: data.filename,
-          originalName: data.originalName,
-          downloadUrl: data.downloadUrl,
-          fileSize: data.fileSize,
-          uploadedAt: data.uploadedAt,
-          updatedAt: data.updatedAt,
-          downloads: data.downloads || 0,
-          views: data.views || 0,
-          isUpdated: data.isUpdated || false
+    } else if (req.method === 'POST') {
+      // Upload/Create resume
+      try {
+        const { name, email, title, description, skills, experience, userId } = req.body;
+        
+        if (!name || !email || !userId) {
+          return res.status(400).json({
+            success: false,
+            error: 'Name, email, and userId are required'
+          });
         }
-      });
-    } catch (error) {
-      console.error('Error getting resume:', error);
-      res.status(500).json({
+
+        // Check if user already has a resume
+        const existingResumeSnapshot = await db.collection('resumes')
+          .where('userId', '==', userId)
+          .limit(1)
+          .get();
+
+        const isUpdate = !existingResumeSnapshot.empty;
+        let resumeId;
+
+        const resumeData = {
+          name,
+          email,
+          title: title || '',
+          description: description || '',
+          skills: skills || '',
+          experience: experience || '',
+          userId,
+          filename: `${name.toLowerCase().replace(/\s+/g, '_')}_resume.pdf`,
+          originalName: `${name}_Resume.pdf`,
+          downloadUrl: `https://example.com/resumes/${name.toLowerCase().replace(/\s+/g, '_')}_resume.pdf`,
+          fileSize: 1024000,
+          downloads: 0,
+          views: 0,
+          isUpdated: true,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        };
+
+        if (isUpdate) {
+          // Update existing resume
+          const existingDoc = existingResumeSnapshot.docs[0];
+          resumeId = existingDoc.id;
+          resumeData.uploadedAt = existingDoc.data().uploadedAt;
+          resumeData.downloads = existingDoc.data().downloads;
+          resumeData.views = existingDoc.data().views;
+          
+          await db.collection('resumes').doc(resumeId).update(resumeData);
+        } else {
+          // Create new resume
+          resumeData.uploadedAt = admin.firestore.FieldValue.serverTimestamp();
+          const docRef = await db.collection('resumes').add(resumeData);
+          resumeId = docRef.id;
+        }
+
+        const responseData = {
+          id: resumeId,
+          ...resumeData
+        };
+
+        res.status(isUpdate ? 200 : 201).json({
+          success: true,
+          message: isUpdate ? 'Resume updated successfully' : 'Resume uploaded successfully',
+          isUpdate,
+          data: responseData
+        });
+      } catch (error) {
+        console.error('Error uploading resume:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+    } else {
+      res.status(405).json({
         success: false,
-        error: error.message
+        error: 'Method not allowed'
       });
     }
   });
 });
 
-const getUserResume = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
+// Get resume by ID (GET) or Delete resume (DELETE)
+exports.getResume = functions.https.onRequest((req, res) => {
+  corsHandler(req, res, async () => {
+    if (req.method === 'GET') {
+      // Get resume by ID
+      try {
+        const resumeId = req.path.split('/').pop();
+        
+        if (!resumeId) {
+          return res.status(400).json({
+            success: false,
+            error: 'Resume ID is required'
+          });
+        }
+
+        const resumeDoc = await db.collection('resumes').doc(resumeId).get();
+        
+        if (!resumeDoc.exists) {
+          return res.status(404).json({
+            success: false,
+            error: 'Resume not found'
+          });
+        }
+
+        const resume = {
+          id: resumeDoc.id,
+          ...resumeDoc.data()
+        };
+
+        res.json({
+          success: true,
+          resume: resume
+        });
+      } catch (error) {
+        console.error('Error getting resume:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+    } else if (req.method === 'DELETE') {
+      // Delete resume
+      try {
+        const resumeId = req.path.split('/').pop();
+        
+        if (!resumeId) {
+          return res.status(400).json({
+            success: false,
+            error: 'Resume ID is required'
+          });
+        }
+
+        await db.collection('resumes').doc(resumeId).delete();
+
+        res.json({
+          success: true,
+          message: 'Resume deleted successfully'
+        });
+      } catch (error) {
+        console.error('Error deleting resume:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+    } else {
+      res.status(405).json({
+        success: false,
+        error: 'Method not allowed'
+      });
+    }
+  });
+});
+
+// Get resume by user ID
+exports.getUserResume = functions.https.onRequest((req, res) => {
+  corsHandler(req, res, async () => {
     try {
-      const { userId } = req.params;
+      const userId = req.path.split('/').pop();
       
       if (!userId) {
         return res.status(400).json({
@@ -173,33 +259,19 @@ const getUserResume = functions.https.onRequest((req, res) => {
       if (resumesSnapshot.empty) {
         return res.status(404).json({
           success: false,
-          error: 'No resume found for this user'
+          error: 'Resume not found for this user'
         });
       }
 
-      const doc = resumesSnapshot.docs[0];
-      const data = doc.data();
-      
-      res.status(200).json({
+      const resumeDoc = resumesSnapshot.docs[0];
+      const resume = {
+        id: resumeDoc.id,
+        ...resumeDoc.data()
+      };
+
+      res.json({
         success: true,
-        resume: {
-          id: doc.id,
-          name: data.name,
-          email: data.email,
-          title: data.title,
-          description: data.description,
-          skills: data.skills,
-          experience: data.experience,
-          filename: data.filename,
-          originalName: data.originalName,
-          downloadUrl: data.downloadUrl,
-          fileSize: data.fileSize,
-          uploadedAt: data.uploadedAt,
-          updatedAt: data.updatedAt,
-          downloads: data.downloads || 0,
-          views: data.views || 0,
-          isUpdated: data.isUpdated || false
-        }
+        resume: resume
       });
     } catch (error) {
       console.error('Error getting user resume:', error);
@@ -211,90 +283,38 @@ const getUserResume = functions.https.onRequest((req, res) => {
   });
 });
 
-const uploadResume = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
+// Increment view count
+exports.viewResume = functions.https.onRequest((req, res) => {
+  corsHandler(req, res, async () => {
     try {
-      const { name, email, title, description, skills, experience, userId } = req.body;
+      const resumeId = req.path.split('/')[1];
       
-      if (!name || !email || !userId) {
-        return res.status(400).json({
-          success: false,
-          error: 'Name, email, and userId are required'
-        });
-      }
-
-      // Check if user already has a resume
-      const existingResume = await db.collection('resumes')
-        .where('userId', '==', userId)
-        .limit(1)
-        .get();
-
-      let resumeData = {
-        name,
-        email,
-        title: title || '',
-        description: description || '',
-        skills: skills || '',
-        experience: experience || '',
-        userId,
-        uploadedAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        downloads: 0,
-        views: 0,
-        isPublic: true,
-        isUpdated: false
-      };
-
-      if (!existingResume.empty) {
-        // Update existing resume
-        const docId = existingResume.docs[0].id;
-        await db.collection('resumes').doc(docId).update({
-          ...resumeData,
-          isUpdated: true
-        });
-
-        res.status(200).json({
-          success: true,
-          message: 'Resume updated successfully',
-          resumeId: docId
-        });
-      } else {
-        // Create new resume
-        const resumeRef = await db.collection('resumes').add(resumeData);
-
-        res.status(201).json({
-          success: true,
-          message: 'Resume uploaded successfully',
-          resumeId: resumeRef.id
-        });
-      }
-    } catch (error) {
-      console.error('Error uploading resume:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  });
-});
-
-const viewResume = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
-    try {
-      const { id } = req.params;
-      
-      if (!id) {
+      if (!resumeId) {
         return res.status(400).json({
           success: false,
           error: 'Resume ID is required'
         });
       }
 
-      await db.collection('resumes').doc(id).update({
-        views: admin.firestore.FieldValue.increment(1)
+      const resumeRef = db.collection('resumes').doc(resumeId);
+      
+      // Use transaction to safely increment view count
+      await db.runTransaction(async (transaction) => {
+        const resumeDoc = await transaction.get(resumeRef);
+        
+        if (!resumeDoc.exists) {
+          throw new Error('Resume not found');
+        }
+
+        const currentViews = resumeDoc.data().views || 0;
+        transaction.update(resumeRef, { views: currentViews + 1 });
+        
+        return currentViews + 1;
       });
 
-      res.status(200).json({
+      console.log(`Incremented view count for resume ${resumeId}`);
+
+      res.json({
         success: true,
         message: 'View count incremented'
       });
@@ -308,38 +328,11 @@ const viewResume = functions.https.onRequest((req, res) => {
   });
 });
 
-const deleteResume = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
+// Search resumes
+exports.searchResumes = functions.https.onRequest((req, res) => {
+  corsHandler(req, res, async () => {
     try {
-      const { id } = req.params;
-      
-      if (!id) {
-        return res.status(400).json({
-          success: false,
-          error: 'Resume ID is required'
-        });
-      }
-
-      await db.collection('resumes').doc(id).delete();
-
-      res.status(200).json({
-        success: true,
-        message: 'Resume deleted successfully'
-      });
-    } catch (error) {
-      console.error('Error deleting resume:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  });
-});
-
-const searchResumes = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
-    try {
-      const { query } = req.params;
+      const query = req.path.split('/').pop();
       
       if (!query) {
         return res.status(400).json({
@@ -348,40 +341,24 @@ const searchResumes = functions.https.onRequest((req, res) => {
         });
       }
 
-      const resumesSnapshot = await db.collection('resumes')
-        .where('isPublic', '==', true)
-        .get();
-
+      const resumesSnapshot = await db.collection('resumes').get();
       const resumes = [];
+      
       resumesSnapshot.forEach(doc => {
-        const data = doc.data();
-        const searchText = `${data.name} ${data.title} ${data.description} ${data.skills}`.toLowerCase();
+        const resume = doc.data();
+        const searchText = `${resume.name} ${resume.title} ${resume.description} ${resume.skills}`.toLowerCase();
         
         if (searchText.includes(query.toLowerCase())) {
           resumes.push({
             id: doc.id,
-            name: data.name,
-            email: data.email,
-            title: data.title,
-            description: data.description,
-            skills: data.skills,
-            experience: data.experience,
-            filename: data.filename,
-            originalName: data.originalName,
-            downloadUrl: data.downloadUrl,
-            fileSize: data.fileSize,
-            uploadedAt: data.uploadedAt,
-            updatedAt: data.updatedAt,
-            downloads: data.downloads || 0,
-            views: data.views || 0,
-            isUpdated: data.isUpdated || false
+            ...resume
           });
         }
       });
 
-      res.status(200).json({
+      res.json({
         success: true,
-        resumes
+        resumes: resumes
       });
     } catch (error) {
       console.error('Error searching resumes:', error);
@@ -393,83 +370,65 @@ const searchResumes = functions.https.onRequest((req, res) => {
   });
 });
 
-// Health check endpoint
-const healthCheck = functions.https.onRequest((req, res) => {
-  cors(req, res, () => {
-    res.status(200).json({
-      success: true,
-      message: 'Server is running',
-      timestamp: new Date().toISOString()
-    });
-  });
-});
-
-// User Management APIs
-const createUser = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
+// Download resume
+exports.downloadResume = functions.https.onRequest((req, res) => {
+  corsHandler(req, res, async () => {
     try {
-      const { email, password, displayName } = req.body;
+      const resumeId = req.path.split('/')[1];
       
-      const userRecord = await admin.auth().createUser({
-        email,
-        password,
-        displayName
-      });
-
-      // Create user profile in Firestore
-      await db.collection('users').doc(userRecord.uid).set({
-        email,
-        displayName,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        projects: [],
-        resumes: []
-      });
-
-      res.status(201).json({
-        success: true,
-        user: {
-          uid: userRecord.uid,
-          email: userRecord.email,
-          displayName: userRecord.displayName
-        }
-      });
-    } catch (error) {
-      console.error('Error creating user:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  });
-});
-
-const getUserProfile = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
-    try {
-      const { uid } = req.query;
-      
-      if (!uid) {
+      if (!resumeId) {
         return res.status(400).json({
           success: false,
-          error: 'User ID is required'
+          error: 'Resume ID is required'
         });
       }
 
-      const userDoc = await db.collection('users').doc(uid).get();
+      const resumeDoc = await db.collection('resumes').doc(resumeId).get();
       
-      if (!userDoc.exists) {
+      if (!resumeDoc.exists) {
         return res.status(404).json({
           success: false,
-          error: 'User not found'
+          error: 'Resume not found'
         });
       }
 
-      res.status(200).json({
-        success: true,
-        user: userDoc.data()
+      const resume = resumeDoc.data();
+
+      // Create resume content
+      const resumeContent = `
+RESUME
+
+Name: ${resume.name}
+Email: ${resume.email}
+Title: ${resume.title}
+
+About:
+${resume.description}
+
+Skills:
+${resume.skills}
+
+Experience:
+${resume.experience}
+
+Uploaded: ${resume.uploadedAt ? resume.uploadedAt.toDate().toISOString() : 'Unknown'}
+      `.trim();
+
+      // Increment download count
+      await db.collection('resumes').doc(resumeId).update({
+        downloads: (resume.downloads || 0) + 1
       });
+
+      console.log(`Downloaded resume ${resumeId}. New download count: ${(resume.downloads || 0) + 1}`);
+
+      // Set headers for file download
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Disposition', `attachment; filename="${resume.originalName}"`);
+      res.setHeader('Content-Length', Buffer.byteLength(resumeContent, 'utf8'));
+      
+      res.send(resumeContent);
     } catch (error) {
-      console.error('Error getting user profile:', error);
+      console.error('Error downloading resume:', error);
       res.status(500).json({
         success: false,
         error: error.message
@@ -478,51 +437,97 @@ const getUserProfile = functions.https.onRequest((req, res) => {
   });
 });
 
-// Project Management APIs
-const createProject = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
-    try {
-      const { uid, project } = req.body;
-      
-      if (!uid || !project) {
-        return res.status(400).json({
+// Project Management Functions
+
+// Get all projects (GET) or Create project (POST)
+exports.getAllProjects = functions.https.onRequest((req, res) => {
+  corsHandler(req, res, async () => {
+    if (req.method === 'GET') {
+      // Get all projects
+      try {
+        console.log('Fetching all projects...');
+        
+        const projectsSnapshot = await db.collection('projects').get();
+        const projects = [];
+        
+        projectsSnapshot.forEach(doc => {
+          projects.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+
+        res.json({
+          success: true,
+          data: projects
+        });
+      } catch (error) {
+        console.error('Error getting projects:', error);
+        res.status(500).json({
           success: false,
-          error: 'User ID and project data are required'
+          error: error.message
         });
       }
+    } else if (req.method === 'POST') {
+      // Create project
+      try {
+        const { name, technologies, short_description, long_description, github_url, live_url, image_url, userId, status } = req.body;
+        
+        if (!name || !technologies || !short_description || !userId) {
+          return res.status(400).json({
+            success: false,
+            error: 'Name, technologies, short_description, and userId are required'
+          });
+        }
 
-      const projectRef = await db.collection('projects').add({
-        ...project,
-        userId: uid,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
+        const projectData = {
+          userId,
+          name,
+          technologies: Array.isArray(technologies) ? technologies : technologies.split(',').map(t => t.trim()),
+          short_description,
+          long_description: long_description || '',
+          github_url: github_url || '',
+          live_url: live_url || '',
+          image_url: image_url || '',
+          status: status || 'in-progress',
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        };
 
-      // Add project to user's projects array
-      await db.collection('users').doc(uid).update({
-        projects: admin.firestore.FieldValue.arrayUnion(projectRef.id)
-      });
+        const docRef = await db.collection('projects').add(projectData);
+        const newProject = {
+          id: docRef.id,
+          ...projectData
+        };
 
-      res.status(201).json({
-        success: true,
-        projectId: projectRef.id
-      });
-    } catch (error) {
-      console.error('Error creating project:', error);
-      res.status(500).json({
+        res.status(201).json({
+          success: true,
+          message: 'Project created successfully',
+          data: newProject
+        });
+      } catch (error) {
+        console.error('Error creating project:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+    } else {
+      res.status(405).json({
         success: false,
-        error: error.message
+        error: 'Method not allowed'
       });
     }
   });
 });
 
-const getUserProjects = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
+// Get projects by user ID
+exports.getUserProjects = functions.https.onRequest((req, res) => {
+  corsHandler(req, res, async () => {
     try {
-      const { uid } = req.query;
+      const userId = req.path.split('/').pop();
       
-      if (!uid) {
+      if (!userId) {
         return res.status(400).json({
           success: false,
           error: 'User ID is required'
@@ -530,8 +535,7 @@ const getUserProjects = functions.https.onRequest((req, res) => {
       }
 
       const projectsSnapshot = await db.collection('projects')
-        .where('userId', '==', uid)
-        .orderBy('createdAt', 'desc')
+        .where('userId', '==', userId)
         .get();
 
       const projects = [];
@@ -542,9 +546,11 @@ const getUserProjects = functions.https.onRequest((req, res) => {
         });
       });
 
-      res.status(200).json({
+      console.log(`Found ${projects.length} projects for user ${userId}`);
+      
+      res.json({
         success: true,
-        projects
+        data: projects
       });
     } catch (error) {
       console.error('Error getting user projects:', error);
@@ -556,26 +562,303 @@ const getUserProjects = functions.https.onRequest((req, res) => {
   });
 });
 
-const updateProject = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
+// Get project by ID (GET), Update project (PUT), or Delete project (DELETE)
+exports.getProject = functions.https.onRequest((req, res) => {
+  corsHandler(req, res, async () => {
+    if (req.method === 'GET') {
+      // Get project by ID
+      try {
+        const projectId = req.path.split('/').pop();
+        
+        if (!projectId) {
+          return res.status(400).json({
+            success: false,
+            error: 'Project ID is required'
+          });
+        }
+
+        const projectDoc = await db.collection('projects').doc(projectId).get();
+        
+        if (!projectDoc.exists) {
+          return res.status(404).json({
+            success: false,
+            error: 'Project not found'
+          });
+        }
+
+        const project = {
+          id: projectDoc.id,
+          ...projectDoc.data()
+        };
+
+        res.json({
+          success: true,
+          data: project
+        });
+      } catch (error) {
+        console.error('Error getting project:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+    } else if (req.method === 'PUT') {
+      // Update project
+      try {
+        const projectId = req.path.split('/').pop();
+        const updateData = req.body;
+        
+        if (!projectId) {
+          return res.status(400).json({
+            success: false,
+            error: 'Project ID is required'
+          });
+        }
+
+        // Ensure technologies is always an array
+        if (updateData.technologies) {
+          updateData.technologies = Array.isArray(updateData.technologies) 
+            ? updateData.technologies 
+            : updateData.technologies.split(',').map(t => t.trim());
+        }
+
+        updateData.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+
+        await db.collection('projects').doc(projectId).update(updateData);
+
+        const updatedDoc = await db.collection('projects').doc(projectId).get();
+        const updatedProject = {
+          id: updatedDoc.id,
+          ...updatedDoc.data()
+        };
+
+        res.json({
+          success: true,
+          message: 'Project updated successfully',
+          data: updatedProject
+        });
+      } catch (error) {
+        console.error('Error updating project:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+    } else if (req.method === 'DELETE') {
+      // Delete project
+      try {
+        const projectId = req.path.split('/').pop();
+        
+        if (!projectId) {
+          return res.status(400).json({
+            success: false,
+            error: 'Project ID is required'
+          });
+        }
+
+        await db.collection('projects').doc(projectId).delete();
+
+        res.json({
+          success: true,
+          message: 'Project deleted successfully'
+        });
+      } catch (error) {
+        console.error('Error deleting project:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+    } else {
+      res.status(405).json({
+        success: false,
+        error: 'Method not allowed'
+      });
+    }
+  });
+});
+
+// Upload Resume Function
+exports.uploadResume = functions.https.onRequest((req, res) => {
+  corsHandler(req, res, async () => {
+    if (req.method !== 'POST') {
+      return res.status(405).json({
+        success: false,
+        error: 'Method not allowed'
+      });
+    }
+
     try {
-      const { projectId, updates } = req.body;
+      const { name, email, title, description, skills, experience, userId } = req.body;
       
-      if (!projectId || !updates) {
+      if (!name || !email || !userId) {
         return res.status(400).json({
           success: false,
-          error: 'Project ID and updates are required'
+          error: 'Name, email, and userId are required'
         });
       }
 
-      await db.collection('projects').doc(projectId).update({
-        ...updates,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
+      // Check if user already has a resume
+      const existingResumeSnapshot = await db.collection('resumes')
+        .where('userId', '==', userId)
+        .limit(1)
+        .get();
 
-      res.status(200).json({
+      const isUpdate = !existingResumeSnapshot.empty;
+      let resumeId;
+
+      const resumeData = {
+        name,
+        email,
+        title: title || '',
+        description: description || '',
+        skills: skills || '',
+        experience: experience || '',
+        userId,
+        filename: `${name.toLowerCase().replace(/\s+/g, '_')}_resume.pdf`,
+        originalName: `${name}_Resume.pdf`,
+        downloadUrl: `https://example.com/resumes/${name.toLowerCase().replace(/\s+/g, '_')}_resume.pdf`,
+        fileSize: 1024000,
+        downloads: 0,
+        views: 0,
+        isUpdated: true,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+
+      if (isUpdate) {
+        // Update existing resume
+        const existingDoc = existingResumeSnapshot.docs[0];
+        resumeId = existingDoc.id;
+        resumeData.uploadedAt = existingDoc.data().uploadedAt;
+        resumeData.downloads = existingDoc.data().downloads;
+        resumeData.views = existingDoc.data().views;
+        
+        await db.collection('resumes').doc(resumeId).update(resumeData);
+      } else {
+        // Create new resume
+        resumeData.uploadedAt = admin.firestore.FieldValue.serverTimestamp();
+        const docRef = await db.collection('resumes').add(resumeData);
+        resumeId = docRef.id;
+      }
+
+      const responseData = {
+        id: resumeId,
+        ...resumeData
+      };
+
+      res.status(isUpdate ? 200 : 201).json({
         success: true,
-        message: 'Project updated successfully'
+        message: isUpdate ? 'Resume updated successfully' : 'Resume uploaded successfully',
+        isUpdate,
+        data: responseData
+      });
+    } catch (error) {
+      console.error('Error uploading resume:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+});
+
+// Create Project Function
+exports.createProject = functions.https.onRequest((req, res) => {
+  corsHandler(req, res, async () => {
+    if (req.method !== 'POST') {
+      return res.status(405).json({
+        success: false,
+        error: 'Method not allowed'
+      });
+    }
+
+    try {
+      const { userId, name, technologies, short_description, long_description, github_url, live_url, image_url, status } = req.body;
+      
+      if (!userId || !name || !technologies || !short_description) {
+        return res.status(400).json({
+          success: false,
+          error: 'userId, name, technologies, and short_description are required'
+        });
+      }
+
+      const projectData = {
+        userId,
+        name,
+        technologies: Array.isArray(technologies) ? technologies : technologies.split(',').map(t => t.trim()),
+        short_description,
+        long_description: long_description || '',
+        github_url: github_url || '',
+        live_url: live_url || '',
+        image_url: image_url || '',
+        status: status || 'in-progress',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+
+      const docRef = await db.collection('projects').add(projectData);
+      const newProject = {
+        id: docRef.id,
+        ...projectData
+      };
+
+      res.status(201).json({
+        success: true,
+        message: 'Project created successfully',
+        data: newProject
+      });
+    } catch (error) {
+      console.error('Error creating project:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+});
+
+// Update Project Function
+exports.updateProject = functions.https.onRequest((req, res) => {
+  corsHandler(req, res, async () => {
+    if (req.method !== 'PUT') {
+      return res.status(405).json({
+        success: false,
+        error: 'Method not allowed'
+      });
+    }
+
+    try {
+      const projectId = req.path.split('/').pop();
+      const updateData = req.body;
+      
+      if (!projectId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Project ID is required'
+        });
+      }
+
+      // Ensure technologies is always an array
+      if (updateData.technologies) {
+        updateData.technologies = Array.isArray(updateData.technologies) 
+          ? updateData.technologies 
+          : updateData.technologies.split(',').map(t => t.trim());
+      }
+
+      updateData.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+
+      await db.collection('projects').doc(projectId).update(updateData);
+
+      const updatedDoc = await db.collection('projects').doc(projectId).get();
+      const updatedProject = {
+        id: updatedDoc.id,
+        ...updatedDoc.data()
+      };
+
+      res.json({
+        success: true,
+        message: 'Project updated successfully',
+        data: updatedProject
       });
     } catch (error) {
       console.error('Error updating project:', error);
@@ -587,27 +870,29 @@ const updateProject = functions.https.onRequest((req, res) => {
   });
 });
 
-const deleteProject = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
+// Delete Project Function
+exports.deleteProject = functions.https.onRequest((req, res) => {
+  corsHandler(req, res, async () => {
+    if (req.method !== 'DELETE') {
+      return res.status(405).json({
+        success: false,
+        error: 'Method not allowed'
+      });
+    }
+
     try {
-      const { projectId, uid } = req.body;
+      const projectId = req.path.split('/').pop();
       
-      if (!projectId || !uid) {
+      if (!projectId) {
         return res.status(400).json({
           success: false,
-          error: 'Project ID and User ID are required'
+          error: 'Project ID is required'
         });
       }
 
-      // Delete the project
       await db.collection('projects').doc(projectId).delete();
 
-      // Remove project from user's projects array
-      await db.collection('users').doc(uid).update({
-        projects: admin.firestore.FieldValue.arrayRemove(projectId)
-      });
-
-      res.status(200).json({
+      res.json({
         success: true,
         message: 'Project deleted successfully'
       });
@@ -621,20 +906,38 @@ const deleteProject = functions.https.onRequest((req, res) => {
   });
 });
 
-// Export all functions
-module.exports = {
-  getPublicResumes,
-  getResume,
-  getUserResume,
-  uploadResume,
-  viewResume,
-  deleteResume,
-  searchResumes,
-  healthCheck,
-  createUser,
-  getUserProfile,
-  createProject,
-  getUserProjects,
-  updateProject,
-  deleteProject
-}; 
+// Delete Resume Function
+exports.deleteResume = functions.https.onRequest((req, res) => {
+  corsHandler(req, res, async () => {
+    if (req.method !== 'DELETE') {
+      return res.status(405).json({
+        success: false,
+        error: 'Method not allowed'
+      });
+    }
+
+    try {
+      const resumeId = req.path.split('/').pop();
+      
+      if (!resumeId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Resume ID is required'
+        });
+      }
+
+      await db.collection('resumes').doc(resumeId).delete();
+
+      res.json({
+        success: true,
+        message: 'Resume deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting resume:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+});

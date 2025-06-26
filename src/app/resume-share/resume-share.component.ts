@@ -42,12 +42,8 @@ export class ResumeShareComponent implements OnInit {
     this.error = '';
     
     this.resumeService.getAllResumes().subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.resumes = response.data;
-        } else {
-          this.error = 'Failed to load resumes';
-        }
+      next: (resumes) => {
+        this.resumes = resumes;
         this.loading = false;
       },
       error: (err) => {
@@ -68,12 +64,8 @@ export class ResumeShareComponent implements OnInit {
     this.error = '';
 
     this.resumeService.searchResumes(this.searchQuery).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.resumes = response.data;
-        } else {
-          this.error = 'Failed to search resumes';
-        }
+      next: (resumes) => {
+        this.resumes = resumes;
         this.loading = false;
       },
       error: (err) => {

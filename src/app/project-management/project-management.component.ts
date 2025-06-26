@@ -54,12 +54,16 @@ export class ProjectManagementComponent implements OnInit {
     this.error = '';
 
     this.projectService.getUserProjects(currentUser.uid).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.projects = response.data;
-        } else {
-          this.error = 'Failed to load projects';
-        }
+      next: (projects) => {
+        // Ensure technologies is always an array for each project
+        this.projects = projects.map((project: any) => ({
+          ...project,
+          technologies: Array.isArray(project.technologies) 
+            ? project.technologies 
+            : (typeof project.technologies === 'string' 
+              ? project.technologies.split(',').map((t: string) => t.trim())
+              : [])
+        }));
         this.loading = false;
       },
       error: (err) => {

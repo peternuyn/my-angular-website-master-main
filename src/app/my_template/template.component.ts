@@ -112,11 +112,9 @@ export class TemplateComponent {
    */
   loadUserProjects(userId: string): void {
     this.projectService.getUserProjects(userId).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.userProjects = response.data;
-          console.log('User projects loaded:', this.userProjects);
-        }
+      next: (projects) => {
+        this.userProjects = projects;
+        console.log('User projects loaded:', this.userProjects);
       },
       error: (error) => {
         console.error('Error loading user projects:', error);
@@ -129,12 +127,10 @@ export class TemplateComponent {
    */
   checkExistingResume(userId: string): void {
     this.resumeService.getUserResume(userId).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.existingResume = response.data;
-          this.hasExistingResume = true;
-          console.log('User already has a resume:', this.existingResume);
-        }
+      next: (resume) => {
+        this.existingResume = resume;
+        this.hasExistingResume = true;
+        console.log('User already has a resume:', this.existingResume);
       },
       error: (error) => {
         // 404 means no resume exists, which is fine
@@ -161,6 +157,17 @@ export class TemplateComponent {
     reader.onload = () => (this.profileImageUrl = reader.result as string);
     reader.onerror = () => console.error('File reading failed');
     reader.readAsDataURL(file);
+  }
+
+  /**
+   * Format file size for display
+   */
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
   /**
@@ -444,13 +451,12 @@ export class TemplateComponent {
     this.shareMessage = '';
 
     try {
-      // Generate PDF blob
+      // Generate PDF blob as fallback
       const pdfBlob = await this.generatePDFBlob();
-      
-      // Create a File object from the blob
-      const pdfFile = new File([pdfBlob], `${this.name.replace(/\s+/g, '_')}_resume.pdf`, {
+      const resumeFile = new File([pdfBlob], `${this.name.replace(/\s+/g, '_')}_resume.pdf`, {
         type: 'application/pdf'
       });
+      console.log('Generated PDF resume file');
 
       // Extract email from contact info if available
       const emailMatch = this.contactInfo.match(/[\w.-]+@[\w.-]+\.\w+/);
@@ -464,8 +470,7 @@ export class TemplateComponent {
         description: this.aboutMe,
         skills: this.extractSkillsFromText(),
         experience: this.otherInfo,
-        userId: currentUser.uid,
-        resumeFile: pdfFile
+        userId: currentUser.uid
       };
 
       // Upload to resume platform (will create new or update existing)
@@ -503,8 +508,8 @@ export class TemplateComponent {
       });
 
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      this.shareMessage = 'Error generating PDF. Please try again.';
+      console.error('Error preparing resume:', error);
+      this.shareMessage = 'Error preparing resume. Please try again.';
       this.isSharing = false;
     }
   }
