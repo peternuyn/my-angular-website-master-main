@@ -54,7 +54,8 @@ const upload = multer({
 const corsHandler = (req, res, next) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+  res.set('Access-Control-Max-Age', '86400');
   
   if (req.method === 'OPTIONS') {
     res.status(204).send('');
@@ -75,6 +76,25 @@ exports.health = functions.https.onRequest((req, res) => {
   });
 });
 
+// Helper function to convert Firestore Timestamps to ISO strings
+function convertTimestamps(data) {
+  if (!data || typeof data !== 'object') return data;
+  
+  const converted = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value && typeof value === 'object' && value.seconds && value.nanoseconds) {
+      // This is a Firestore Timestamp
+      converted[key] = new Date(value.seconds * 1000 + value.nanoseconds / 1000000).toISOString();
+    } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+      // Recursively convert nested objects
+      converted[key] = convertTimestamps(value);
+    } else {
+      converted[key] = value;
+    }
+  }
+  return converted;
+}
+
 // Resume Management Functions
 
 // Get all resumes (GET) or Upload resume (POST)
@@ -89,9 +109,10 @@ exports.getAllResumes = functions.https.onRequest((req, res) => {
         const resumes = [];
         
         resumesSnapshot.forEach(doc => {
+          const resumeData = convertTimestamps(doc.data());
           resumes.push({
             id: doc.id,
-            ...doc.data()
+            ...resumeData
           });
         });
 
@@ -215,7 +236,7 @@ exports.getResume = functions.https.onRequest((req, res) => {
 
         const resume = {
           id: resumeDoc.id,
-          ...resumeDoc.data()
+          ...convertTimestamps(resumeDoc.data())
         };
 
         res.json({
@@ -291,7 +312,7 @@ exports.getUserResume = functions.https.onRequest((req, res) => {
       const resumeDoc = resumesSnapshot.docs[0];
       const resume = {
         id: resumeDoc.id,
-        ...resumeDoc.data()
+        ...convertTimestamps(resumeDoc.data())
       };
 
       res.json({
@@ -312,7 +333,10 @@ exports.getUserResume = functions.https.onRequest((req, res) => {
 exports.viewResume = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
     try {
-      const resumeId = req.path.split('/')[1];
+      // Extract resume ID from the URL path
+      // URL format: /api/resumes/{resumeId}/view
+      const pathParts = req.path.split('/');
+      const resumeId = pathParts[pathParts.length - 2]; // Get the ID before 'view'
       
       if (!resumeId) {
         return res.status(400).json({
@@ -376,9 +400,10 @@ exports.searchResumes = functions.https.onRequest((req, res) => {
         const searchText = `${resume.name} ${resume.title} ${resume.description} ${resume.skills}`.toLowerCase();
         
         if (searchText.includes(query.toLowerCase())) {
+          const resumeData = convertTimestamps(resume);
           resumes.push({
             id: doc.id,
-            ...resume
+            ...resumeData
           });
         }
       });
@@ -401,7 +426,10 @@ exports.searchResumes = functions.https.onRequest((req, res) => {
 exports.downloadResume = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
     try {
-      const resumeId = req.path.split('/')[1];
+      // Extract resume ID from the URL path
+      // URL format: /api/resumes/{resumeId}/download
+      const pathParts = req.path.split('/');
+      const resumeId = pathParts[pathParts.length - 2]; // Get the ID before 'download'
       
       if (!resumeId) {
         return res.status(400).json({
@@ -410,9 +438,12 @@ exports.downloadResume = functions.https.onRequest((req, res) => {
         });
       }
 
+      console.log(`Attempting to download resume with ID: ${resumeId}`);
+
       const resumeDoc = await db.collection('resumes').doc(resumeId).get();
       
       if (!resumeDoc.exists) {
+        console.log(`Resume not found with ID: ${resumeId}`);
         return res.status(404).json({
           success: false,
           error: 'Resume not found'
@@ -727,8 +758,15 @@ exports.getProject = functions.https.onRequest((req, res) => {
 
 // Upload Resume Function
 exports.uploadResume = functions.https.onRequest((req, res) => {
+  console.log('uploadResume function called');
+  console.log('Request method:', req.method);
+  console.log('Request headers:', req.headers);
+  console.log('Request body:', req.body);
+  console.log('Request path:', req.path);
+  
   corsHandler(req, res, async () => {
     if (req.method !== 'POST') {
+      console.log('Method not allowed:', req.method);
       return res.status(405).json({
         success: false,
         error: 'Method not allowed'
@@ -736,13 +774,21 @@ exports.uploadResume = functions.https.onRequest((req, res) => {
     }
 
     try {
-      const { name, email, title, description, skills, experience, userId } = req.body;
+      let { name, email, title, description, skills, experience, userId } = req.body;
+      console.log('Extracted data:', { name, email, title, description, skills, experience, userId });
       
-      if (!name || !email || !userId) {
+      if (!name || !email) {
+        console.log('Missing required fields');
         return res.status(400).json({
           success: false,
-          error: 'Name, email, and userId are required'
+          error: 'Name and email are required'
         });
+      }
+
+      // If userId is not provided, generate a random one
+      if (!userId) {
+        userId = 'guest_' + Math.random().toString(36).substring(2, 12);
+        console.log('Generated guest userId:', userId);
       }
 
       // Check if user already has a resume
@@ -753,6 +799,7 @@ exports.uploadResume = functions.https.onRequest((req, res) => {
 
       const isUpdate = !existingResumeSnapshot.empty;
       let resumeId;
+      console.log('Is update:', isUpdate);
 
       const resumeData = {
         name,
@@ -781,11 +828,13 @@ exports.uploadResume = functions.https.onRequest((req, res) => {
         resumeData.views = existingDoc.data().views;
         
         await db.collection('resumes').doc(resumeId).update(resumeData);
+        console.log('Updated existing resume with ID:', resumeId);
       } else {
         // Create new resume
         resumeData.uploadedAt = admin.firestore.FieldValue.serverTimestamp();
         const docRef = await db.collection('resumes').add(resumeData);
         resumeId = docRef.id;
+        console.log('Created new resume with ID:', resumeId);
       }
 
       const responseData = {
@@ -793,6 +842,7 @@ exports.uploadResume = functions.https.onRequest((req, res) => {
         ...resumeData
       };
 
+      console.log('Sending success response');
       res.status(isUpdate ? 200 : 201).json({
         success: true,
         message: isUpdate ? 'Resume updated successfully' : 'Resume uploaded successfully',
@@ -991,111 +1041,134 @@ exports.deleteResume = functions.https.onRequest((req, res) => {
 
 // Upload resume file
 exports.uploadResumeFile = functions.https.onRequest((req, res) => {
-  corsHandler(req, res, () => {
-    if (req.method !== 'POST') {
-      return res.status(405).json({
+  console.log('uploadResumeFile called with method:', req.method);
+  console.log('Request headers:', req.headers);
+  console.log('Request body keys:', Object.keys(req.body || {}));
+  
+  // Handle CORS preflight
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+  res.set('Access-Control-Max-Age', '86400');
+  
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
+  }
+  
+  if (req.method !== 'POST') {
+    console.log('Method not allowed:', req.method);
+    return res.status(405).json({
+      success: false,
+      error: 'Method not allowed'
+    });
+  }
+
+  // Use multer to handle file upload
+  upload.single('file')(req, res, async (err) => {
+    console.log('Multer processing completed');
+    console.log('Multer error:', err);
+    console.log('Request file:', req.file);
+    console.log('Request body after multer:', req.body);
+    
+    if (err) {
+      console.error('Multer error:', err);
+      return res.status(400).json({
         success: false,
-        error: 'Method not allowed'
+        error: err.message
       });
     }
 
-    // Use multer to handle file upload
-    upload.single('file')(req, res, async (err) => {
-      if (err) {
-        console.error('Multer error:', err);
+    try {
+      const file = req.file;
+      const { userId, name, email } = req.body;
+
+      console.log('Extracted data:', { userId, name, email, fileExists: !!file });
+
+      if (!file) {
+        console.log('No file uploaded');
         return res.status(400).json({
           success: false,
-          error: err.message
+          error: 'No file uploaded'
         });
       }
 
-      try {
-        const file = req.file;
-        const { userId, name, email } = req.body;
-
-        if (!file) {
-          return res.status(400).json({
-            success: false,
-            error: 'No file uploaded'
-          });
-        }
-
-        if (!userId || !name) {
-          return res.status(400).json({
-            success: false,
-            error: 'userId and name are required'
-          });
-        }
-
-        // Check if user already has a resume
-        const existingResumeSnapshot = await db.collection('resumes')
-          .where('userId', '==', userId)
-          .limit(1)
-          .get();
-
-        const isUpdate = !existingResumeSnapshot.empty;
-        let resumeId;
-
-        // Create file metadata
-        const fileExtension = path.extname(file.originalname);
-        const fileName = `${name.toLowerCase().replace(/\s+/g, '_')}_resume${fileExtension}`;
-
-        const resumeData = {
-          name,
-          email: email || 'vietthanh0120@gmail.com',
-          title: '',
-          description: '',
-          skills: '',
-          experience: '',
-          userId,
-          filename: fileName,
-          originalName: file.originalname,
-          fileSize: file.size,
-          fileType: file.mimetype,
-          fileBuffer: file.buffer.toString('base64'), // Store file content as base64
-          downloads: 0,
-          views: 0,
-          isUpdated: true,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        };
-
-        if (isUpdate) {
-          // Update existing resume
-          const existingDoc = existingResumeSnapshot.docs[0];
-          resumeId = existingDoc.id;
-          resumeData.uploadedAt = existingDoc.data().uploadedAt;
-          resumeData.downloads = existingDoc.data().downloads;
-          resumeData.views = existingDoc.data().views;
-          
-          await db.collection('resumes').doc(resumeId).update(resumeData);
-        } else {
-          // Create new resume
-          resumeData.uploadedAt = admin.firestore.FieldValue.serverTimestamp();
-          const docRef = await db.collection('resumes').add(resumeData);
-          resumeId = docRef.id;
-        }
-
-        const responseData = {
-          id: resumeId,
-          ...resumeData,
-          fileBuffer: undefined // Don't send file content in response
-        };
-
-        console.log(`Resume file uploaded successfully: ${fileName}`);
-
-        res.status(isUpdate ? 200 : 201).json({
-          success: true,
-          message: isUpdate ? 'Resume file updated successfully' : 'Resume file uploaded successfully',
-          isUpdate,
-          data: responseData
-        });
-      } catch (error) {
-        console.error('Error uploading resume file:', error);
-        res.status(500).json({
+      if (!userId || !name) {
+        console.log('Missing required fields:', { userId, name });
+        return res.status(400).json({
           success: false,
-          error: error.message
+          error: 'userId and name are required'
         });
       }
-    });
+
+      // Check if user already has a resume
+      const existingResumeSnapshot = await db.collection('resumes')
+        .where('userId', '==', userId)
+        .limit(1)
+        .get();
+
+      const isUpdate = !existingResumeSnapshot.empty;
+      let resumeId;
+
+      // Create file metadata
+      const fileExtension = path.extname(file.originalname);
+      const fileName = `${name.toLowerCase().replace(/\s+/g, '_')}_resume${fileExtension}`;
+
+      const resumeData = {
+        name,
+        email: email || 'vietthanh0120@gmail.com',
+        title: '',
+        description: '',
+        skills: '',
+        experience: '',
+        userId,
+        filename: fileName,
+        originalName: file.originalname,
+        fileSize: file.size,
+        fileType: file.mimetype,
+        fileBuffer: file.buffer.toString('base64'), // Store file content as base64
+        downloads: 0,
+        views: 0,
+        isUpdated: true,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+
+      if (isUpdate) {
+        // Update existing resume
+        const existingDoc = existingResumeSnapshot.docs[0];
+        resumeId = existingDoc.id;
+        resumeData.uploadedAt = existingDoc.data().uploadedAt;
+        resumeData.downloads = existingDoc.data().downloads;
+        resumeData.views = existingDoc.data().views;
+        
+        await db.collection('resumes').doc(resumeId).update(resumeData);
+      } else {
+        // Create new resume
+        resumeData.uploadedAt = admin.firestore.FieldValue.serverTimestamp();
+        const docRef = await db.collection('resumes').add(resumeData);
+        resumeId = docRef.id;
+      }
+
+      const responseData = {
+        id: resumeId,
+        ...resumeData,
+        fileBuffer: undefined // Don't send file content in response
+      };
+
+      console.log(`Resume file uploaded successfully: ${fileName}`);
+
+      res.status(isUpdate ? 200 : 201).json({
+        success: true,
+        message: isUpdate ? 'Resume file updated successfully' : 'Resume file uploaded successfully',
+        isUpdate,
+        data: responseData
+      });
+    } catch (error) {
+      console.error('Error uploading resume file:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
   });
 });

@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { UserProfileService } from './user_profile_service/user_profile_service';
 import { Firestore, collection, doc, docData } from '@angular/fire/firestore';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { jsPDF } from 'jspdf';
 import { ResumeService, ResumeUploadData, Resume } from '../../services/resume.service';
 import { ProjectService, Project } from '../../services/project.service';
@@ -13,7 +13,7 @@ import { ProjectService, Project } from '../../services/project.service';
 @Component({
   selector: 'app-template',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './template.component.html',
 })
 export class TemplateComponent {
@@ -441,71 +441,142 @@ export class TemplateComponent {
       return;
     }
 
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser) {
-      this.shareMessage = 'Please sign in to share your resume.';
-      return;
-    }
-
     this.isSharing = true;
     this.shareMessage = '';
 
     try {
-      // Generate PDF blob as fallback
-      const pdfBlob = await this.generatePDFBlob();
-      const resumeFile = new File([pdfBlob], `${this.name.replace(/\s+/g, '_')}_resume.pdf`, {
-        type: 'application/pdf'
-      });
-      console.log('Generated PDF resume file');
+      // Check if user has uploaded a resume file
+      if (this.hasExistingResume) {
+        // User has existing resume, use that instead of generating
+        console.log('Using existing resume:', this.existingResume);
+        
+        // Extract email from contact info if available
+        const emailMatch = this.contactInfo.match(/[\w.-]+@[\w.-]+\.\w+/);
+        const email = emailMatch ? emailMatch[0] : '';
 
-      // Extract email from contact info if available
-      const emailMatch = this.contactInfo.match(/[\w.-]+@[\w.-]+\.\w+/);
-      const email = emailMatch ? emailMatch[0] : '';
-
-      // Prepare upload data
-      const uploadData: ResumeUploadData = {
-        name: this.name,
-        email: email || 'no-email@example.com',
-        title: this.title,
-        description: this.aboutMe,
-        skills: this.extractSkillsFromText(),
-        experience: this.otherInfo,
-        userId: currentUser.uid
-      };
-
-      // Upload to resume platform (will create new or update existing)
-      this.resumeService.uploadResume(uploadData).subscribe({
-        next: (response) => {
-          if (response.success) {
-            const isUpdate = response.isUpdate;
-            this.shareMessage = isUpdate 
-              ? 'Resume updated successfully!' 
-              : 'Successfully shared to resume platform!';
-            
-            // Update local state
-            if (isUpdate) {
-              this.existingResume = response.data;
-              this.hasExistingResume = true;
-            } else {
-              this.existingResume = response.data;
-              this.hasExistingResume = true;
-            }
-            
-            // Clear message after 3 seconds
-            setTimeout(() => {
-              this.shareMessage = '';
-            }, 3000);
-          } else {
-            this.shareMessage = response.message || 'Failed to share resume.';
-          }
-          this.isSharing = false;
-        },
-        error: (err) => {
-          console.error('Error sharing resume:', err);
-          this.shareMessage = 'Error sharing resume. Please try again.';
-          this.isSharing = false;
+        // Generate guest userId if not logged in
+        let userId = '';
+        const currentUser = this.authService.getCurrentUser();
+        if (currentUser && currentUser.uid) {
+          userId = currentUser.uid;
+        } else {
+          userId = 'guest_' + Math.random().toString(36).substring(2, 12);
         }
-      });
+
+        // Update the resume with new profile data
+        const uploadData: ResumeUploadData = {
+          name: this.name,
+          email: email || 'no-email@example.com',
+          title: this.title,
+          description: this.aboutMe,
+          skills: this.extractSkillsFromText(),
+          experience: this.otherInfo,
+          userId
+        };
+        console.log('Uploading resume with data:', uploadData);
+
+        // Upload to resume platform (will create new or update existing)
+        this.resumeService.uploadResume(uploadData).subscribe({
+          next: (response) => {
+            if (response.success) {
+              const isUpdate = response.isUpdate;
+              this.shareMessage = isUpdate 
+                ? 'Resume updated successfully!' 
+                : 'Successfully shared to resume platform!';
+              
+              // Update local state
+              if (isUpdate) {
+                this.existingResume = response.data;
+                this.hasExistingResume = true;
+              } else {
+                this.existingResume = response.data;
+                this.hasExistingResume = true;
+              }
+              
+              // Clear message after 3 seconds
+              setTimeout(() => {
+                this.shareMessage = '';
+              }, 3000);
+            } else {
+              this.shareMessage = response.message || 'Failed to share resume.';
+            }
+            this.isSharing = false;
+          },
+          error: (err) => {
+            console.error('Error sharing resume:', err);
+            this.shareMessage = 'Error sharing resume. Please try again.';
+            this.isSharing = false;
+          }
+        });
+      } else {
+        // No uploaded resume, generate one from profile data (current behavior)
+        console.log('No uploaded resume found, generating from profile data');
+        // Generate PDF blob as fallback
+        const pdfBlob = await this.generatePDFBlob();
+        const resumeFile = new File([pdfBlob], `${this.name.replace(/\s+/g, '_')}_resume.pdf`, {
+          type: 'application/pdf'
+        });
+        console.log('Generated PDF resume file');
+
+        // Extract email from contact info if available
+        const emailMatch = this.contactInfo.match(/[\w.-]+@[\w.-]+\.\w+/);
+        const email = emailMatch ? emailMatch[0] : '';
+
+        // Generate guest userId if not logged in
+        let userId = '';
+        const currentUser = this.authService.getCurrentUser();
+        if (currentUser && currentUser.uid) {
+          userId = currentUser.uid;
+        } else {
+          userId = 'guest_' + Math.random().toString(36).substring(2, 12);
+        }
+
+        // Prepare upload data
+        const uploadData: ResumeUploadData = {
+          name: this.name,
+          email: email || 'no-email@example.com',
+          title: this.title,
+          description: this.aboutMe,
+          skills: this.extractSkillsFromText(),
+          experience: this.otherInfo,
+          userId
+        };
+        console.log('Uploading resume with data:', uploadData);
+
+        // Upload to resume platform (will create new or update existing)
+        this.resumeService.uploadResume(uploadData).subscribe({
+          next: (response) => {
+            if (response.success) {
+              const isUpdate = response.isUpdate;
+              this.shareMessage = isUpdate 
+                ? 'Resume updated successfully!' 
+                : 'Successfully shared to resume platform!';
+              
+              // Update local state
+              if (isUpdate) {
+                this.existingResume = response.data;
+                this.hasExistingResume = true;
+              } else {
+                this.existingResume = response.data;
+                this.hasExistingResume = true;
+              }
+              
+              // Clear message after 3 seconds
+              setTimeout(() => {
+                this.shareMessage = '';
+              }, 3000);
+            } else {
+              this.shareMessage = response.message || 'Failed to share resume.';
+            }
+            this.isSharing = false;
+          },
+          error: (err) => {
+            console.error('Error sharing resume:', err);
+            this.shareMessage = 'Error sharing resume. Please try again.';
+            this.isSharing = false;
+          }
+        });
+      }
 
     } catch (error) {
       console.error('Error preparing resume:', error);

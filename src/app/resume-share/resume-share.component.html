@@ -26,12 +26,6 @@
         (click)="setActiveTab('browse')">
         Browse Resumes
       </button>
-      <button 
-        class="tab" 
-        [class.tab-active]="activeTab === 'upload'"
-        (click)="setActiveTab('upload')">
-        Upload Resume
-      </button>
     </div>
   </div>
 
@@ -94,11 +88,7 @@
           {{ searchQuery ? 'Try adjusting your search terms.' : 'Be the first to share your resume!' }}
         </p>
         <div class="mt-6 space-y-2">
-          <button 
-            class="btn btn-primary"
-            (click)="setActiveTab('upload')">
-            Upload Resume
-          </button>
+  
           <div *ngIf="currentUserId">
             <p class="text-sm text-gray-500 mt-2">or</p>
             <a 
@@ -112,10 +102,5 @@
     </div>
   </div>
 
-  <!-- Upload Tab -->
-  <div *ngIf="activeTab === 'upload'">
-    <app-resume-upload 
-      (resumeUploaded)="onResumeUploaded()">
-    </app-resume-upload>
-  </div>
+ 
 </div> 

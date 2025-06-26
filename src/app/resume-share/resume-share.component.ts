@@ -4,13 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ResumeService, Resume } from '../../services/resume.service';
 import { AuthService } from '../../services/auth.service';
-import { ResumeUploadComponent } from './resume-upload/resume-upload.component';
 import { ResumeListComponent } from './resume-list/resume-list.component';
 
 @Component({
   selector: 'app-resume-share',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, ResumeUploadComponent, ResumeListComponent],
+  imports: [CommonModule, FormsModule, RouterModule, ResumeListComponent],
   templateUrl: './resume-share.component.html',
   styleUrls: ['./resume-share.component.scss']
 })

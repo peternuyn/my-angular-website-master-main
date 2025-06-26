@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "myresume01",
+    "site": "my-resume-website-1",
     "public": "dist/my-angular-website/browser",
     "ignore": [
       "firebase.json",
@@ -11,6 +11,10 @@
       {
         "source": "/api/health",
         "function": "health"
+      },
+      {
+        "source": "/api/resumes/upload-file",
+        "function": "uploadResumeFile"
       },
       {
         "source": "/api/resumes/upload",

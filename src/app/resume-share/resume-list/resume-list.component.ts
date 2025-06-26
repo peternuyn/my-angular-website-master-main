@@ -1,11 +1,12 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { ResumeService, Resume } from '../../../services/resume.service';
 
 @Component({
   selector: 'app-resume-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './resume-list.component.html',
   styleUrls: ['./resume-list.component.scss']
 })
@@ -57,7 +58,18 @@ export class ResumeListComponent {
 
   formatDate(dateInput: any): string {
     if (!dateInput) return '';
-    // Firestore Timestamp object
+    
+    // If it's already a string (ISO format from backend), parse it directly
+    if (typeof dateInput === 'string') {
+      const date = new Date(dateInput);
+      return isNaN(date.getTime()) ? '' : date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+    
+    // Firestore Timestamp object (fallback for any remaining timestamp objects)
     if (typeof dateInput === 'object' && dateInput.seconds) {
       return new Date(dateInput.seconds * 1000).toLocaleDateString('en-US', {
         year: 'numeric',
@@ -65,7 +77,8 @@ export class ResumeListComponent {
         day: 'numeric'
       });
     }
-    // ISO string or JS Date
+    
+    // Regular Date object or other date formats
     const date = new Date(dateInput);
     return isNaN(date.getTime()) ? '' : date.toLocaleDateString('en-US', {
       year: 'numeric',

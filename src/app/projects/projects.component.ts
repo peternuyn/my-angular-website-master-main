@@ -39,7 +39,7 @@ export class ProjectsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadUserProjects();
+    this.initializeDemoProjects();
   }
 
   private initializeDemoProjects(): void {
@@ -64,42 +64,6 @@ export class ProjectsComponent implements OnInit {
       },
     ];
 
-    this.workingOnProjects = [
-      {
-        name: 'Scavenger Hunt Mobile App',
-        technologies: 'React Native, Expo, TypeScript',
-        short_description: 'Introduced to Expo, how to build a mobile app',
-        long_description: 'There are some interesting features in this project such as scanning the QR code, and the app will show the location of the next clue. A map tracker of the user location and the location of the next clue.',
-      }
-    ];
-  }
-
-  loadUserProjects(): void {
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser) {
-      // If no user is logged in, just show demo projects
-      return;
-    }
-
-    this.loading = true;
-    this.error = '';
-
-    this.projectService.getUserProjects(currentUser.uid).subscribe({
-      next: (projects) => {
-        if (projects.length > 0) {
-          // Replace demo projects with user's actual projects
-          this.projects = projects.filter((p: Project) => p.status === 'completed');
-          this.workingOnProjects = projects.filter((p: Project) => p.status === 'in-progress');
-          this.hasUserProjects = true;
-        }
-        this.loading = false;
-      },
-      error: (err) => {
-        this.error = 'Error loading projects. Please try again.';
-        this.loading = false;
-        console.error('Error loading projects:', err);
-      }
-    });
   }
 
   showModal(project: any) {
@@ -115,16 +79,5 @@ export class ProjectsComponent implements OnInit {
     return this.authService.getCurrentUser();
   }
 
-  // Helper method to check if a project is the new format
-  isNewProjectFormat(project: Project | OldProject): project is Project {
-    return 'id' in project && 'userId' in project;
-  }
 
-  // Helper method to get technologies as string for display
-  getTechnologiesDisplay(project: Project | OldProject): string {
-    if (this.isNewProjectFormat(project)) {
-      return project.technologies.join(', ');
-    }
-    return project.technologies;
-  }
 }

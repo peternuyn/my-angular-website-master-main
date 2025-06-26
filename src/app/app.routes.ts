@@ -8,6 +8,7 @@ import { TemplateComponent } from './my_template/template.component';
 import { RegisterComponent } from './account/register/register.component';
 import { ResumeShareComponent } from './resume-share/resume-share.component';
 import { ProjectManagementComponent } from './project-management/project-management.component';
+import { ResumeViewComponent } from './resume-view/resume-view.component';
 
 // Define your routes here
 export const routes: Routes = [
@@ -19,6 +20,7 @@ export const routes: Routes = [
   { path: 'user/:id', component: TemplateComponent },
   { path: 'user/:id/projects', component: ProjectManagementComponent }, // User's projects with template header
   { path: 'resumes', component: ResumeShareComponent }, // Route to "Resume Sharing" page
+  { path: 'resume/:id', component: ResumeViewComponent }, // Route to individual resume view
   { path: 'manage-projects', component: ProjectManagementComponent } // Route to "Project Management" page
 ];
 

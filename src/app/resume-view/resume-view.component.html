@@ -1,0 +1,100 @@
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-4xl mx-auto px-4">
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="text-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+      <p class="mt-4 text-gray-600">Loading resume...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error" class="text-center py-12">
+      <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+        <svg class="h-12 w-12 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+        </svg>
+        <h2 class="text-xl font-semibold text-red-800 mb-2">Resume Not Found</h2>
+        <p class="text-red-600 mb-4">{{ error }}</p>
+        <button (click)="goBack()" class="btn btn-primary">
+          Go Back
+        </button>
+      </div>
+    </div>
+
+    <!-- Resume Content -->
+    <div *ngIf="!isLoading && !error && resume" class="bg-white shadow-lg rounded-lg overflow-hidden">
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8">
+        <div class="flex justify-between items-start">
+          <div class="flex items-center gap-6">
+            <img *ngIf="profileImageUrl" [src]="profileImageUrl" alt="Profile photo" class="w-24 h-24 rounded-full object-cover border-4 border-white">
+            <div>
+              <h1 class="text-4xl font-bold mb-2">{{ resume.name }}</h1>
+              <p class="text-xl opacity-90">{{ resume.title || 'Professional' }}</p>
+              <p class="text-lg opacity-80 mt-2">{{ resume.email }}</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="bg-white bg-opacity-20 rounded-lg p-4">
+              <p class="text-sm opacity-80">Views</p>
+              <p class="text-2xl font-bold">{{ resume.views || 0 }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="p-8">
+        <!-- Description -->
+        <div *ngIf="resume.description" class="mb-8">
+          <h2 class="text-2xl font-semibold mb-4 text-gray-800">About</h2>
+          <p class="text-gray-700 leading-relaxed">{{ resume.description }}</p>
+        </div>
+
+        <!-- Skills -->
+        <div *ngIf="resume.skills" class="mb-8">
+          <h2 class="text-2xl font-semibold mb-4 text-gray-800">Skills</h2>
+          <div class="flex flex-wrap gap-2">
+            <span 
+              *ngFor="let skill of getSkillsArray(resume.skills)" 
+              class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+              {{ skill }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Experience -->
+        <div *ngIf="resume.experience" class="mb-8">
+          <h2 class="text-2xl font-semibold mb-4 text-gray-800">Experience</h2>
+          <div class="prose max-w-none">
+            <p class="text-gray-700 whitespace-pre-line">{{ resume.experience }}</p>
+          </div>
+        </div>
+
+        <!-- Resume Info -->
+        <div class="border-t pt-6 mt-8">
+          <div class="flex justify-between items-center text-sm text-gray-500">
+            <div>
+              <p>Uploaded: {{ formatDate(resume.uploadedAt) }}</p>
+              <p *ngIf="resume.isUpdated">Last updated: {{ formatDate(resume.updatedAt) }}</p>
+            </div>
+            <div class="flex gap-4">
+              <button 
+                (click)="downloadResume()" 
+                class="btn btn-outline btn-sm">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Download
+              </button>
+              <button 
+                (click)="goBack()" 
+                class="btn btn-ghost btn-sm">
+                Back to List
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

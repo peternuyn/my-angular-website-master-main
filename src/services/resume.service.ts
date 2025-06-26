@@ -69,11 +69,6 @@ export class ResumeService {
     return this.http.post(`${this.apiUrl}/resumes/upload`, data, { headers });
   }
 
-  // Upload a resume file
-  uploadResumeFile(formData: FormData): Observable<any> {
-    return this.http.post(`${this.apiUrl}/resumes/upload-file`, formData);
-  }
-
   // Download a resume (now returns the download URL)
   downloadResume(id: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/resumes/${id}/download`, { responseType: 'blob' });

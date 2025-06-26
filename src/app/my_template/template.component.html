@@ -29,6 +29,7 @@
     </div>
   </div>
 
+  
   <!-- Name Input -->
   <input
     type="text"
@@ -82,7 +83,7 @@
       <h3 class="text-3xl font-bold">Projects</h3>
       <a 
         *ngIf="isEditable"
-        routerLink="/project-management"
+        routerLink="/user/{{uid}}/projects"
         class="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm">
         <svg class="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
