@@ -39,7 +39,3 @@ You can LoGIn this account for roaming:
 - `public/` – Static assets
 
 ---
-
-**MIT License**
-
-For questions or issues, open an issue on GitHub. 
