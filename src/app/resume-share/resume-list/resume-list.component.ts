@@ -37,19 +37,6 @@ export class ResumeListComponent {
     });
   }
 
-  viewResume(resume: Resume): void {
-    this.resumeService.viewResume(resume.id).subscribe({
-      next: (response) => {
-        if (response.success) {
-          resume.views = response.views;
-        }
-      },
-      error: (err) => {
-        console.error('Error updating view count:', err);
-      }
-    });
-  }
-
   deleteResume(resume: Resume): void {
     if (confirm(`Are you sure you want to delete ${resume.name}'s resume?`)) {
       this.resumeService.deleteResume(resume.id).subscribe({
