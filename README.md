@@ -1,6 +1,9 @@
 # My Resume Website
 
 A modern, full-stack Angular application for creating, sharing, and managing professional resumes and projects. Built with Angular 18, Firebase Functions, and Firestore database.
+You can try to login using this account: 
+  abc@gmail.com
+  abc123
 
 ## 🌟 Features
 
