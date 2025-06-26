@@ -23,3 +23,9 @@ echo "Frontend: http://localhost:4200"
 echo
 echo "Press Ctrl+C to stop all servers"
 wait 
+
+npm install -g firebase-tools 
+
+firebase login 
+
+firebase use my-resume-website-1 

@@ -9,11 +9,12 @@ export interface Resume {
   email: string;
   title: string;
   description: string;
-  skills: string[];
+  skills: string;
   experience: string;
-  fileName: string;
-  filePath: string;
-  originalFileName: string;
+  filename: string;
+  originalName: string;
+  downloadUrl: string;
+  fileSize: number;
   uploadedAt: string;
   updatedAt: string;
   downloads: number;
@@ -36,11 +37,12 @@ export interface ResumeUploadData {
   providedIn: 'root'
 })
 export class ResumeService {
-  private apiUrl = 'http://localhost:3001/api';
+  // Use Firebase Functions API
+  private apiUrl = '/api';
 
   constructor(private http: HttpClient) { }
 
-  // Get all resumes
+  // Get all resumes (public resumes)
   getAllResumes(): Observable<any> {
     return this.http.get(`${this.apiUrl}/resumes`);
   }
@@ -70,26 +72,9 @@ export class ResumeService {
     return this.http.post(`${this.apiUrl}/resumes`, formData);
   }
 
-  // Update existing resume
-  updateResume(id: string, data: ResumeUploadData): Observable<any> {
-    const formData = new FormData();
-    formData.append('name', data.name);
-    formData.append('email', data.email);
-    formData.append('userId', data.userId);
-    if (data.title) formData.append('title', data.title);
-    if (data.description) formData.append('description', data.description);
-    if (data.skills) formData.append('skills', data.skills);
-    if (data.experience) formData.append('experience', data.experience);
-    formData.append('resumeFile', data.resumeFile);
-
-    return this.http.put(`${this.apiUrl}/resumes/${id}`, formData);
-  }
-
-  // Download a resume
+  // Download a resume (now returns the download URL)
   downloadResume(id: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/resumes/${id}/download`, {
-      responseType: 'blob'
-    });
+    return this.http.get(`${this.apiUrl}/resumes/${id}`);
   }
 
   // Increment view count

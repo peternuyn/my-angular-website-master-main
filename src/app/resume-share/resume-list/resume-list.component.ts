@@ -16,22 +16,35 @@ export class ResumeListComponent {
   constructor(private resumeService: ResumeService) {}
 
   downloadResume(resume: Resume): void {
-    this.resumeService.downloadResume(resume.id).subscribe({
-      next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = resume.originalFileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      },
-      error: (err) => {
-        console.error('Error downloading resume:', err);
-        alert('Error downloading resume. Please try again.');
-      }
-    });
+    // Use the download URL from Firebase Storage
+    if (resume.downloadUrl) {
+      const link = document.createElement('a');
+      link.href = resume.downloadUrl;
+      link.download = resume.originalName;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      // Fallback to API call if download URL is not available
+      this.resumeService.downloadResume(resume.id).subscribe({
+        next: (response) => {
+          if (response.success && response.data.downloadUrl) {
+            const link = document.createElement('a');
+            link.href = response.data.downloadUrl;
+            link.download = resume.originalName;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }
+        },
+        error: (err) => {
+          console.error('Error downloading resume:', err);
+          alert('Error downloading resume. Please try again.');
+        }
+      });
+    }
   }
 
   viewResume(resume: Resume): void {
@@ -74,9 +87,10 @@ export class ResumeListComponent {
     });
   }
 
-  getSkillsDisplay(skills: string[]): string {
-    if (!skills || skills.length === 0) return 'No skills listed';
-    return skills.slice(0, 3).join(', ') + (skills.length > 3 ? '...' : '');
+  getSkillsDisplay(skills: string): string {
+    if (!skills) return 'No skills listed';
+    const skillsArray = skills.split(',').map(s => s.trim());
+    return skillsArray.slice(0, 3).join(', ') + (skillsArray.length > 3 ? '...' : '');
   }
 
   truncateText(text: string, maxLength: number = 100): string {

@@ -33,7 +33,8 @@ export interface ProjectCreateData {
   providedIn: 'root'
 })
 export class ProjectService {
-  private apiUrl = 'http://localhost:3001/api';
+  // Use Firebase Functions API
+  private apiUrl = '/api';
 
   constructor(private http: HttpClient) { }
 
